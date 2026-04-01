@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neural Grade — Case Study by Sadaf | Yveloxy</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --primary: #6366f1;
+  --accent: #8b5cf6;
+  --green: #22c55e;
+  --yellow: #f59e0b;
+  --bg: #060b18;
+  --bg2: #0d1526;
+  --text: #e2e8f0;
+  --muted: #64748b;
+  --border: rgba(255,255,255,0.07);
+  --card: rgba(255,255,255,0.03);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+.numbers-bg    { background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 50%, var(--bg) 100%); }
+.tracker-section { background: var(--bg2); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+/* ── NAV ── */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  isolation: isolate;
+  padding: 16px 48px;
+  display: flex; justify-content: space-between; align-items: center;
+  background: rgba(6,11,24,0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  transition: all 0.3s;
+}
+.nav-name { font-weight: 700; font-size: 15px; }
+.nav-name span { color: var(--muted); font-weight: 400; }
+.nav-pill {
+  font-size: 11px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--primary);
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.25);
+  padding: 5px 12px; border-radius: 20px;
+  display: flex; align-items: center; gap: 6px;
+}
+.live-dot {
+  width: 6px; height: 6px; background: var(--green);
+  border-radius: 50%; animation: blink 1.5s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: flex-start;
+  padding: 120px 48px 80px;
+  max-width: 1000px; margin: 0 auto;
+  position: relative;
+}
+
+.hero-eyebrow {
+  font-size: 12px; font-weight: 700; letter-spacing: 3px;
+  text-transform: uppercase; color: var(--primary);
+  margin-bottom: 24px; opacity: 0;
+  animation: fadeUp 0.8s 0.2s forwards;
+}
+
+.hero h1 {
+  font-size: clamp(36px, 6vw, 72px);
+  font-weight: 900; line-height: 1.05;
+  letter-spacing: -2px; margin-bottom: 28px;
+  opacity: 0; animation: fadeUp 0.8s 0.4s forwards;
+}
+.hero h1 .grad {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.hero h1 .outline {
+  -webkit-text-stroke: 1px rgba(255,255,255,0.2);
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-desc {
+  font-size: 18px; color: var(--muted); max-width: 560px;
+  line-height: 1.7; margin-bottom: 48px;
+  opacity: 0; animation: fadeUp 0.8s 0.6s forwards;
+}
+
+.hero-meta {
+  display: flex; flex-wrap: wrap; gap: 0;
+  border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; opacity: 0;
+  animation: fadeUp 0.8s 0.8s forwards;
+}
+.meta-box {
+  padding: 18px 28px;
+  border-right: 1px solid var(--border);
+}
+.meta-box:last-child { border-right: none; }
+.meta-box-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+.meta-box-val { font-size: 15px; font-weight: 700; }
+
+.scroll-hint {
+  position: absolute; bottom: 40px; left: 48px;
+  display: flex; align-items: center; gap: 10px;
+  font-size: 12px; color: var(--muted);
+  opacity: 0; animation: fadeUp 0.8s 1.2s forwards;
+}
+.scroll-line {
+  width: 40px; height: 1px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── SECTION BASE ── */
+.section {
+  max-width: 900px; margin: 0 auto;
+  padding: 100px 48px;
+}
+
+.section-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 700; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 20px;
+}
+.section-tag-line {
+  width: 24px; height: 1px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+}
+
+.section h2 {
+  font-size: clamp(26px, 4vw, 42px);
+  font-weight: 800; line-height: 1.15;
+  letter-spacing: -0.5px; margin-bottom: 20px;
+}
+
+.section p {
+  color: var(--muted); font-size: 16px; line-height: 1.8;
+  margin-bottom: 16px; max-width: 660px;
+}
+
+/* ── REVEAL ANIMATIONS ── */
+.reveal {
+  opacity: 0; transform: translateY(40px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+
+/* ── DIVIDER ── */
+.divider {
+  height: 1px; max-width: 900px; margin: 0 auto;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+
+/* ── PROBLEM SECTION ── */
+.problem-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; margin-top: 40px;
+}
+.problem-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px; padding: 24px;
+  transition: border-color 0.3s, transform 0.3s;
+}
+.problem-card:hover { border-color: rgba(99,102,241,0.3); transform: translateY(-2px); }
+.p-card-icon { font-size: 28px; margin-bottom: 12px; }
+.p-card-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.p-card-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+/* ── NUMBERS SECTION ── */
+.numbers-bg {
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 50%, var(--bg) 100%);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 100px 48px;
+}
+.numbers-inner { max-width: 900px; margin: 0 auto; }
+
+.numbers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2px;
+  margin-top: 48px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 16px; overflow: hidden;
+}
+.num-block {
+  background: var(--bg2);
+  padding: 40px 32px;
+  position: relative; overflow: hidden;
+}
+.num-block::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  opacity: 0; transition: opacity 0.5s;
+}
+.num-block.counted::before { opacity: 1; }
+.num-val {
+  font-size: clamp(42px, 6vw, 64px);
+  font-weight: 900; letter-spacing: -2px;
+  background: linear-gradient(135deg, #fff 0%, var(--accent) 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  display: block; line-height: 1;
+}
+.num-unit { font-size: 18px; color: var(--muted); font-weight: 400; }
+.num-label { font-size: 13px; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+.num-highlight { font-size: 12px; color: var(--primary); margin-top: 6px; font-weight: 600; }
+
+/* ── STRATEGY SECTION ── */
+.strategy-list { margin-top: 40px; }
+.strategy-item {
+  display: grid; grid-template-columns: 48px 1fr;
+  gap: 20px; padding: 28px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: start;
+}
+.strategy-item:last-child { border-bottom: none; }
+.s-num {
+  width: 48px; height: 48px;
+  border: 1px solid var(--border); border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; color: var(--muted);
+  flex-shrink: 0;
+}
+.s-icon { font-size: 20px; margin-bottom: 8px; }
+.s-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+.s-desc { font-size: 14px; color: var(--muted); line-height: 1.7; }
+.s-tag {
+  display: inline-block; margin-top: 10px;
+  font-size: 11px; font-weight: 700; padding: 3px 10px;
+  border-radius: 10px; background: rgba(99,102,241,0.1);
+  color: var(--primary); border: 1px solid rgba(99,102,241,0.2);
+}
+
+/* ── PROGRESS TRACKER ── */
+.tracker-section {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 100px 48px;
+}
+.tracker-inner { max-width: 900px; margin: 0 auto; }
+
+.tracker-header {
+  display: flex; justify-content: space-between;
+  align-items: flex-end; margin-bottom: 48px;
+  flex-wrap: wrap; gap: 20px;
+}
+.tracker-progress-bar {
+  width: 200px;
+}
+.tracker-progress-label {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: var(--muted); margin-bottom: 8px;
+}
+.tracker-bar-bg {
+  height: 6px; background: var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.tracker-bar-fill {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 10px;
+  transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.weeks-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.week-card {
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px;
+  position: relative; overflow: hidden;
+  transition: all 0.3s;
+}
+.week-card.done {
+  border-color: rgba(34,197,94,0.2);
+  background: rgba(34,197,94,0.04);
+}
+.week-card.active {
+  border-color: rgba(99,102,241,0.4);
+  background: rgba(99,102,241,0.06);
+}
+.week-card.upcoming { background: transparent; opacity: 0.5; }
+
+.week-card.active::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+.wk-num { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+.wk-title { font-size: 13px; font-weight: 700; margin-bottom: 8px; line-height: 1.3; }
+.wk-status {
+  font-size: 11px; font-weight: 700; padding: 2px 8px;
+  border-radius: 8px; display: inline-block;
+}
+.status-done { background: rgba(34,197,94,0.15); color: var(--green); }
+.status-active { background: rgba(99,102,241,0.15); color: var(--primary); }
+.status-upcoming { background: var(--card); color: var(--muted); }
+.wk-check { position: absolute; top: 14px; right: 14px; font-size: 14px; }
+
+/* ── DECISIONS ── */
+.decision-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; margin-top: 40px;
+}
+.decision-card {
+  border: 1px solid var(--border); border-radius: 14px;
+  padding: 24px; position: relative; overflow: hidden;
+  transition: all 0.3s;
+}
+.decision-card:hover { border-color: rgba(99,102,241,0.3); }
+.decision-card::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+  opacity: 0; transition: opacity 0.3s;
+}
+.decision-card:hover::after { opacity: 1; }
+.dc-emoji { font-size: 26px; margin-bottom: 12px; display: block; }
+.dc-title { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+.dc-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.dc-rule {
+  margin-top: 12px; padding: 10px 14px;
+  background: rgba(99,102,241,0.06);
+  border-radius: 8px; font-size: 12px;
+  color: var(--primary); font-weight: 600;
+  border-left: 2px solid var(--primary);
+}
+
+/* ── QUOTE ── */
+.big-quote {
+  max-width: 900px; margin: 0 auto;
+  padding: 80px 48px; text-align: center;
+}
+.big-quote-text {
+  font-size: clamp(20px, 3.5vw, 32px);
+  font-weight: 700; line-height: 1.4;
+  letter-spacing: -0.3px;
+}
+.big-quote-text .q-highlight {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.big-quote-source { margin-top: 20px; font-size: 13px; color: var(--muted); }
+
+/* ── CTA ── */
+.cta-wrap {
+  max-width: 900px; margin: 0 auto 80px;
+  padding: 0 48px;
+}
+.cta-box {
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+  border: 1px solid rgba(99,102,241,0.2);
+  border-radius: 20px; padding: 56px 48px;
+  text-align: center; position: relative; overflow: hidden;
+}
+.cta-box::before {
+  content: '';
+  position: absolute; top: -50%; left: -50%;
+  width: 200%; height: 200%;
+  background: radial-gradient(circle at center, rgba(99,102,241,0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+.cta-box h3 { font-size: 28px; font-weight: 800; margin-bottom: 12px; letter-spacing: -0.3px; }
+.cta-box p { color: var(--muted); margin-bottom: 32px; font-size: 15px; }
+.cta-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white; border-radius: 12px;
+  font-weight: 700; font-size: 15px;
+  text-decoration: none; transition: all 0.3s;
+  box-shadow: 0 8px 32px rgba(99,102,241,0.3);
+}
+.cta-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(99,102,241,0.4); }
+
+/* ── FOOTER ── */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 48px;
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 12px;
+}
+.footer-left { font-size: 13px; color: var(--muted); }
+.footer-left strong { color: var(--text); }
+.footer-right { font-size: 12px; color: var(--muted); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  nav { padding: 14px 20px; }
+  .hero { padding: 100px 20px 60px; }
+  .section, .numbers-bg, .tracker-section { padding-left: 20px; padding-right: 20px; }
+  .problem-grid, .decision-grid { grid-template-columns: 1fr; }
+  .numbers-grid { grid-template-columns: 1fr 1fr; }
+  .weeks-grid { grid-template-columns: 1fr 1fr; }
+  .hero-meta { flex-direction: column; }
+  .meta-box { border-right: none; border-bottom: 1px solid var(--border); }
+  .meta-box:last-child { border-bottom: none; }
+  .tracker-header { flex-direction: column; align-items: flex-start; }
+  .tracker-progress-bar { width: 100%; }
+  .big-quote, .cta-wrap { padding-left: 20px; padding-right: 20px; }
+  footer { padding: 24px 20px; }
+  .cta-box { padding: 36px 24px; }
+}
+@media (max-width: 480px) {
+  .numbers-grid { grid-template-columns: 1fr; }
+  .weeks-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+
+<!-- NAV -->
+<nav>
+  <div class="nav-name">Sadaf <span>· Yveloxy</span></div>
+  <div class="nav-pill"><span class="live-dot"></span> Live Case Study</div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Marketing Case Study · 2026</div>
+  <h1>
+    Building the<br>
+    <span class="grad">Go-To-Market</span><br>
+    <span class="outline">Strategy</span>
+  </h1>
+  <p class="hero-desc">
+    How I designed and executed a complete marketing system for Neural Grade — Pakistan's first AI-powered paper grading tool for teachers.
+  </p>
+  <div class="hero-meta">
+    <div class="meta-box">
+      <div class="meta-box-label">Product</div>
+      <div class="meta-box-val">Neural Grade</div>
+    </div>
+    <div class="meta-box">
+      <div class="meta-box-label">My Role</div>
+      <div class="meta-box-val">Marketing Strategist</div>
+    </div>
+    <div class="meta-box">
+      <div class="meta-box-label">Timeline</div>
+      <div class="meta-box-val">12 Weeks</div>
+    </div>
+    <div class="meta-box">
+      <div class="meta-box-label">Status</div>
+      <div class="meta-box-val" style="color:var(--green)">● Active</div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <div class="scroll-line"></div>
+    Scroll to explore
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- PROBLEM -->
+<div class="section">
+  <div class="section-tag reveal"><div class="section-tag-line"></div> 01 — The Problem</div>
+  <h2 class="reveal reveal-delay-1">A great product with no marketing playbook</h2>
+  <p class="reveal reveal-delay-2">Pakistani school teachers spend 2–3 days grading 200 papers every week. Neural Grade solves this — AI grades in seconds, teacher approves. But no local competitor existed, no playbook to follow.</p>
+  <p class="reveal reveal-delay-2">The marketing challenge: reach the right people, build trust, and do it without a single false claim.</p>
+
+  <div class="problem-grid">
+    <div class="problem-card reveal reveal-delay-1">
+      <div class="p-card-icon">🗺️</div>
+      <div class="p-card-title">No Local Competitor</div>
+      <div class="p-card-desc">First-mover advantage — but no reference point. Had to build strategy from first principles.</div>
+    </div>
+    <div class="problem-card reveal reveal-delay-2">
+      <div class="p-card-icon">🇵🇰</div>
+      <div class="p-card-title">Urdu-First Market</div>
+      <div class="p-card-desc">International tools fail Pakistani teachers. Messaging had to be hyper-local — Urdu/English mix.</div>
+    </div>
+    <div class="problem-card reveal reveal-delay-3">
+      <div class="p-card-icon">🤝</div>
+      <div class="p-card-title">Trust-Based Sale</div>
+      <div class="p-card-desc">"AI replaces teachers" fears are real. Messaging had to be "AI assists, teacher decides."</div>
+    </div>
+    <div class="problem-card reveal reveal-delay-4">
+      <div class="p-card-icon">📱</div>
+      <div class="p-card-title">WhatsApp-First Audience</div>
+      <div class="p-card-desc">Teachers live on WhatsApp & Facebook — not LinkedIn. Strategy had to reflect where they actually are.</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- NUMBERS -->
+<div class="numbers-bg">
+  <div class="numbers-inner">
+    <div class="section-tag reveal"><div class="section-tag-line"></div> 02 — Strategy in Numbers</div>
+    <h2 class="reveal reveal-delay-1">Everything measured. Nothing guessed.</h2>
+
+    <div class="numbers-grid">
+      <div class="num-block reveal reveal-delay-1" data-count="12" data-suffix=" wks">
+        <span class="num-val">0<span class="num-unit"> wks</span></span>
+        <div class="num-label">Launch timeline — phased beta to paid</div>
+        <div class="num-highlight">Mar → Jun 2026</div>
+      </div>
+      <div class="num-block reveal reveal-delay-2" data-count="52" data-suffix="">
+        <span class="num-val">0</span>
+        <div class="num-label">Granular execution tasks across 12 weeks</div>
+        <div class="num-highlight">Each 30–90 min estimated</div>
+      </div>
+      <div class="num-block reveal reveal-delay-3" data-count="7" data-suffix="">
+        <span class="num-val">0</span>
+        <div class="num-label">Custom automation skills built</div>
+        <div class="num-highlight">LinkedIn · WhatsApp · Email · Demo · Tracking</div>
+      </div>
+      <div class="num-block reveal reveal-delay-1" data-count="20" data-suffix="+">
+        <span class="num-val">0<span class="num-unit">+</span></span>
+        <div class="num-label">Ready-to-use copy templates</div>
+        <div class="num-highlight">WhatsApp · Facebook · Email · LinkedIn</div>
+      </div>
+      <div class="num-block reveal reveal-delay-2" data-count="5" data-suffix="">
+        <span class="num-val">0</span>
+        <div class="num-label">Target channels mapped with tactics</div>
+        <div class="num-highlight">WA · FB · IG · Email · Google Ads</div>
+      </div>
+      <div class="num-block reveal reveal-delay-3" data-count="0" data-suffix="">
+        <span class="num-val">0</span>
+        <div class="num-label">False claims made — truth-based only</div>
+        <div class="num-highlight">Every claim verified against product</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STRATEGY -->
+<div class="section">
+  <div class="section-tag reveal"><div class="section-tag-line"></div> 03 — What I Built</div>
+  <h2 class="reveal reveal-delay-1">A system, not just a plan</h2>
+  <p class="reveal reveal-delay-2">Marketing that works long-term needs infrastructure — not just a few posts. Here's what I designed:</p>
+
+  <div class="strategy-list">
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">01</div>
+      <div>
+        <div class="s-icon">🔍</div>
+        <div class="s-title">Competitive Research & Market Gap</div>
+        <div class="s-desc">Mapped Gradescope, Turnitin, ZipGrade against Neural Grade. Found the clear gap: Urdu support + local pricing + any paper format — no configuration. No local competitor exists.</div>
+        <span class="s-tag">Deliverable: Competitive Matrix</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">02</div>
+      <div>
+        <div class="s-icon">🎯</div>
+        <div class="s-title">Positioning & Messaging Framework</div>
+        <div class="s-desc">Defined a positioning statement, 5 unique selling points, and a messaging framework. Core message: "3 din ka kaam, 30 minutes mein." Backed by real product specs, not marketing fluff.</div>
+        <span class="s-tag">Deliverable: Positioning Doc</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">03</div>
+      <div>
+        <div class="s-icon">🧠</div>
+        <div class="s-title">Truth-Based Claims System</div>
+        <div class="s-desc">Built a strict NEVER/ALWAYS claims guide. Every piece of marketing copy runs through it before publishing. No "100% accurate." No "instant grading." No false promises.</div>
+        <span class="s-tag">Deliverable: Claims Guide</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">04</div>
+      <div>
+        <div class="s-icon">📝</div>
+        <div class="s-title">Full Content Engine</div>
+        <div class="s-desc">20+ copy-ready templates across every channel. WhatsApp cold outreach, Facebook posts, LinkedIn reply templates, email sequences, objection handlers — all in Urdu/English mix.</div>
+        <span class="s-tag">Deliverable: Templates Library</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">05</div>
+      <div>
+        <div class="s-icon">🌐</div>
+        <div class="s-title">Landing Page Copy</div>
+        <div class="s-desc">Complete landing page copy — hero, pain points, how it works, feature comparison, FAQ, CTAs. Written in Urdu/English mix matching the target audience's daily language.</div>
+        <span class="s-tag">Deliverable: Landing Page Copy</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">06</div>
+      <div>
+        <div class="s-icon">📅</div>
+        <div class="s-title">12-Week Execution Plan</div>
+        <div class="s-desc">52 granular tasks, phased across Beta Launch → Paid Launch → Scale. Each task has a clear owner, deliverable, and success metric. With budget allocation and risk mitigation built in.</div>
+        <span class="s-tag">Deliverable: Launch Strategy</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">07</div>
+      <div>
+        <div class="s-icon">🤖</div>
+        <div class="s-title">Marketing Automation Skills</div>
+        <div class="s-desc">Built custom Claude Code skills for automated content generation. LinkedIn Image Generator reads post content, analyzes messaging, and generates AI prompts with brand colors. Outputs 3 prompt versions for different AI tools.</div>
+        <span class="s-tag">Deliverable: 7 Custom Skills</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">08</div>
+      <div>
+        <div class="s-icon">🎨</div>
+        <div class="s-title">AI-Powered Visual Content</div>
+        <div class="s-desc">Integrated free AI image generation workflow using Gemini + Canva tool. Brand-consistent visuals (dark navy #060b18, indigo #6366f1, purple #8b5cf6) generated in minutes. No design skills required.</div>
+        <span class="s-tag">Deliverable: Image Generation System</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">09</div>
+      <div>
+        <div class="s-icon">📊</div>
+        <div class="s-title">Live Marketing Dashboard</div>
+        <div class="s-desc">Built a fully deployed marketing command center (Netlify). Tracks beta testers, leads, LinkedIn/Facebook post statuses, auto follow-up flags, conversion rate, and weekly report generator — all in one place.</div>
+        <span class="s-tag">Deliverable: Live Dashboard</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">10</div>
+      <div>
+        <div class="s-icon">🔄</div>
+        <div class="s-title">Google Sheets Two-Way Sync</div>
+        <div class="s-desc">Dashboard data syncs to Google Sheets in real time — works across mobile and laptop. Google Form responses automatically populate the Beta Testers sheet. Duplicate prevention via email check.</div>
+        <span class="s-tag">Deliverable: Multi-Device Data Sync</span>
+      </div>
+    </div>
+    <div class="strategy-item reveal reveal-delay-1">
+      <div class="s-num">11</div>
+      <div>
+        <div class="s-icon">📋</div>
+        <div class="s-title">Beta & Feedback Forms</div>
+        <div class="s-desc">Two live Google Forms: Beta Tester Signup (with email automation on submission) and a 16-field Review Form (screenshot upload, issue tracking, feature feedback). Both trigger automated email notifications and sheet sync.</div>
+        <span class="s-tag">Deliverable: Feedback Infrastructure</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- PROGRESS TRACKER -->
+<div class="tracker-section">
+  <div class="tracker-inner">
+    <div class="section-tag reveal"><div class="section-tag-line"></div> 04 — Live Progress Tracker</div>
+    <div class="tracker-header">
+      <h2 class="reveal reveal-delay-1">Where we are right now</h2>
+      <div class="tracker-progress-bar reveal reveal-delay-2">
+        <div class="tracker-progress-label">
+          <span>Launch Progress</span>
+          <span id="progress-pct">0%</span>
+        </div>
+        <div class="tracker-bar-bg">
+          <div class="tracker-bar-fill" id="tracker-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="weeks-grid">
+      <!-- DONE -->
+      <div class="week-card done reveal reveal-delay-1">
+        <div class="wk-check">✅</div>
+        <div class="wk-num">Week 1</div>
+        <div class="wk-title">Research & Positioning</div>
+        <span class="wk-status status-done">Complete</span>
+      </div>
+      <!-- ACTIVE -->
+      <div class="week-card active reveal reveal-delay-2">
+        <div class="wk-num">Week 2</div>
+        <div class="wk-title">Content Creation Sprint</div>
+        <span class="wk-status status-active">● In Progress</span>
+      </div>
+      <!-- UPCOMING -->
+      <div class="week-card upcoming reveal reveal-delay-3">
+        <div class="wk-num">Week 3–4</div>
+        <div class="wk-title">Beta Launch Outreach</div>
+        <span class="wk-status status-upcoming">Upcoming</span>
+      </div>
+      <div class="week-card upcoming reveal reveal-delay-4">
+        <div class="wk-num">Week 5–6</div>
+        <div class="wk-title">Teacher Feedback & Onboarding</div>
+        <span class="wk-status status-upcoming">Upcoming</span>
+      </div>
+      <div class="week-card upcoming reveal reveal-delay-1">
+        <div class="wk-num">Week 7–8</div>
+        <div class="wk-title">Testimonials & Video</div>
+        <span class="wk-status status-upcoming">Upcoming</span>
+      </div>
+      <div class="week-card upcoming reveal reveal-delay-2">
+        <div class="wk-num">Week 9–10</div>
+        <div class="wk-title">Paid Launch & Ads</div>
+        <span class="wk-status status-upcoming">Upcoming</span>
+      </div>
+      <div class="week-card upcoming reveal reveal-delay-3">
+        <div class="wk-num">Week 11</div>
+        <div class="wk-title">Scale & Referral Program</div>
+        <span class="wk-status status-upcoming">Upcoming</span>
+      </div>
+      <div class="week-card upcoming reveal reveal-delay-4">
+        <div class="wk-num">Week 12</div>
+        <div class="wk-title">Milestone Review & Next Plan</div>
+        <span class="wk-status status-upcoming">Upcoming</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DECISIONS -->
+<div class="section">
+  <div class="section-tag reveal"><div class="section-tag-line"></div> 05 — Key Decisions</div>
+  <h2 class="reveal reveal-delay-1">The choices that shaped everything</h2>
+  <p class="reveal reveal-delay-2">Every strategy is defined by what you choose not to do as much as what you do.</p>
+
+  <div class="decision-grid">
+    <div class="decision-card reveal reveal-delay-1">
+      <span class="dc-emoji">✋</span>
+      <div class="dc-title">Truth-Based Marketing Only</div>
+      <div class="dc-desc">All claims verified against the actual product before publishing. A claims guide governs every piece of copy.</div>
+      <div class="dc-rule">Never: "100% accurate" → Always: "AI suggests, teacher approves"</div>
+    </div>
+    <div class="decision-card reveal reveal-delay-2">
+      <span class="dc-emoji">👩‍🏫</span>
+      <div class="dc-title">B2C First, B2B Later</div>
+      <div class="dc-desc">Target individual teachers directly — not schools as institutions. Simpler sale, faster feedback loop.</div>
+      <div class="dc-rule">Individual teacher adoption → then scale to schools</div>
+    </div>
+    <div class="decision-card reveal reveal-delay-3">
+      <span class="dc-emoji">💬</span>
+      <div class="dc-title">WhatsApp as Primary Channel</div>
+      <div class="dc-desc">Pakistani teachers live on WhatsApp — not email. The strategy goes where the audience actually is.</div>
+      <div class="dc-rule">WhatsApp outreach → video dekho → message karo → onboarding</div>
+    </div>
+    <div class="decision-card reveal reveal-delay-4">
+      <span class="dc-emoji">🆓</span>
+      <div class="dc-title">Free Beta, Then Paid</div>
+      <div class="dc-desc">No payment pressure upfront. Get real usage data, build testimonials, then charge with confidence.</div>
+      <div class="dc-rule">Free trial → feedback → Rs. 1,500/month</div>
+    </div>
+  </div>
+</div>
+
+<!-- BIG QUOTE -->
+<div class="big-quote">
+  <div class="big-quote-text reveal">
+    "<span class="q-highlight">3 din ka kaam, 30 minutes mein</span> — AI se papers check karo, teacher final approval deta hai."
+  </div>
+  <div class="big-quote-source reveal reveal-delay-1">Core value proposition — Neural Grade</div>
+</div>
+
+<!-- CTA -->
+<div class="cta-wrap">
+  <div class="cta-box reveal">
+    <h3>Beta Testers Chahiye — Form Fill Karein</h3>
+    <p>Neural Grade beta ab live hai. Form fill karein — free access milega aur aapka feedback product better banayega.</p>
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSeVZIf_MJKQfiuN-Mi9v-c8UbPlt-LSR7Y8c1ldl0LIzvdlDg/viewform?usp=header" class="cta-btn" target="_blank">
+      Beta Tester Bano →
+    </a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-left">Case study by <strong>Sadaf</strong> · <strong>Yveloxy</strong></div>
+  <div class="footer-right">April 2026 · Updated as launch progresses</div>
+</footer>
+
+<script>
+// ── SCROLL REVEAL ──
+const reveals = document.querySelectorAll('.reveal');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      // trigger countup if number block
+      const nb = entry.target.closest('.num-block') || entry.target;
+      if (nb.dataset.count !== undefined && !nb.classList.contains('counted')) {
+        nb.classList.add('counted');
+        countUp(nb);
+      }
+    }
+  });
+}, { threshold: 0.15 });
+reveals.forEach(el => observer.observe(el));
+
+// Also observe num-blocks directly
+document.querySelectorAll('.num-block').forEach(el => {
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting && !el.classList.contains('counted')) {
+        el.classList.add('counted');
+        countUp(el);
+      }
+    });
+  }, { threshold: 0.3 });
+  io.observe(el);
+});
+
+// ── COUNT UP ──
+function countUp(block) {
+  const target = parseInt(block.dataset.count);
+  const suffix = block.dataset.suffix || '';
+  const valEl = block.querySelector('.num-val');
+  if (!valEl) return;
+
+  const duration = 1800;
+  const start = performance.now();
+
+  function update(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    const current = Math.round(ease * target);
+
+    if (suffix === ' wks') {
+      valEl.innerHTML = current + '<span class="num-unit"> wks</span>';
+    } else if (suffix === '+') {
+      valEl.innerHTML = current + '<span class="num-unit">+</span>';
+    } else {
+      valEl.textContent = current;
+    }
+
+    if (progress < 1) requestAnimationFrame(update);
+  }
+  requestAnimationFrame(update);
+}
+
+// ── PROGRESS BAR ──
+const trackerSection = document.querySelector('.tracker-section');
+const fillEl = document.getElementById('tracker-fill');
+const pctEl = document.getElementById('progress-pct');
+
+// 16/52 tasks complete = 31%
+const progressPct = 31;
+
+const trackerObs = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      setTimeout(() => {
+        fillEl.style.width = progressPct + '%';
+        animateNum(pctEl, 0, progressPct, 1500, '%');
+      }, 400);
+      trackerObs.disconnect();
+    }
+  });
+}, { threshold: 0.3 });
+trackerObs.observe(trackerSection);
+
+function animateNum(el, from, to, dur, unit) {
+  const start = performance.now();
+  function tick(now) {
+    const t = Math.min((now - start) / dur, 1);
+    const ease = 1 - Math.pow(1 - t, 3);
+    el.textContent = Math.round(from + ease * (to - from)) + unit;
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+</script>
+</body>
+</html>

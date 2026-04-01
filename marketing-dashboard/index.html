@@ -1,0 +1,3000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neural Grade — Marketing Dashboard</title>
+  <style>
+    :root {
+      --primary: #6366f1;
+      --accent: #8b5cf6;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --bg: #060b18;
+      --bg2: #0d1526;
+      --bg3: #111827;
+      --text: #f8fafc;
+      --muted: #64748b;
+      --border: rgba(255,255,255,0.07);
+      --card: rgba(255,255,255,0.03);
+      --card-hover: rgba(255,255,255,0.055);
+      --glow: rgba(99,102,241,0.15);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.5); }
+
+    /* ══════════════════════════════════════
+       NAV
+    ══════════════════════════════════════ */
+    nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(6,11,24,0.92);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .nav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: -0.3px;
+    }
+    .nav-brand .live-dot {
+      position: relative;
+      width: 8px; height: 8px;
+    }
+    .nav-brand .live-dot::before,
+    .nav-brand .live-dot::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+    }
+    .nav-brand .live-dot::before { background: var(--green); }
+    .nav-brand .live-dot::after {
+      background: var(--green);
+      animation: ping 2s ease-in-out infinite;
+    }
+    @keyframes ping {
+      0% { transform: scale(1); opacity: 0.8; }
+      70% { transform: scale(2.2); opacity: 0; }
+      100% { transform: scale(1); opacity: 0; }
+    }
+
+    .nav-tabs {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      position: relative;
+    }
+    .nav-tab {
+      padding: 6px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      border: none;
+      background: transparent;
+      transition: color 0.2s, background 0.2s;
+      position: relative;
+      z-index: 1;
+    }
+    .nav-tab:hover { color: var(--text); }
+    .nav-tab.active { color: var(--text); }
+
+    /* sliding pill indicator */
+
+    .nav-right { font-size: 12px; color: var(--muted); }
+
+    /* ══════════════════════════════════════
+       LAYOUT
+    ══════════════════════════════════════ */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px 64px;
+    }
+
+    /* ══════════════════════════════════════
+       SECTION TRANSITIONS
+    ══════════════════════════════════════ */
+    .section { display: none; }
+    .section.active { display: block; }
+    .section.enter {
+      animation: sectionEnter 0.32s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    .section.exit {
+      animation: sectionExit 0.2s ease forwards;
+    }
+    @keyframes sectionEnter {
+      from { opacity: 0; transform: translateX(12px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes sectionExit {
+      from { opacity: 1; transform: translateX(0); }
+      to   { opacity: 0; transform: translateX(-8px); }
+    }
+
+    /* ══════════════════════════════════════
+       SECTION HEADER
+    ══════════════════════════════════════ */
+    .section-header { margin-bottom: 28px; }
+    .section-header h2 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+    .section-header p { font-size: 14px; color: var(--muted); }
+
+    /* ══════════════════════════════════════
+       CARDS
+    ══════════════════════════════════════ */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      margin-bottom: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease, transform 0.25s ease;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(99,102,241,0.4), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .card:hover {
+      border-color: rgba(99,102,241,0.22);
+      box-shadow: 0 8px 32px rgba(99,102,241,0.10);
+      background: var(--card-hover);
+      transform: translateY(-2px);
+    }
+    .card:hover::before { opacity: 1; }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(99,102,241,0.12);
+      color: var(--primary);
+      transition: background 0.2s;
+    }
+
+    /* ══════════════════════════════════════
+       STATS
+    ══════════════════════════════════════ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media(max-width: 768px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s, background 0.25s;
+      cursor: default;
+    }
+    .stat-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 80% 20%, rgba(99,102,241,0.06) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .stat-card:hover {
+      border-color: rgba(99,102,241,0.2);
+      box-shadow: 0 6px 24px rgba(99,102,241,0.10);
+      transform: translateY(-3px);
+      background: var(--card-hover);
+    }
+    .stat-card:hover::after { opacity: 1; }
+
+    .stat-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      border-radius: 2px 2px 0 0;
+    }
+    .stat-bar.indigo { background: linear-gradient(90deg, var(--primary), var(--accent)); }
+    .stat-bar.green  { background: linear-gradient(90deg, var(--green), #86efac); }
+    .stat-bar.yellow { background: linear-gradient(90deg, var(--yellow), #fde68a); }
+    .stat-bar.white  { background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1)); }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 10px;
+    }
+    .stat-value {
+      font-size: 38px;
+      font-weight: 800;
+      line-height: 1;
+      letter-spacing: -2px;
+    }
+    .stat-value.indigo {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-value.green {
+      background: linear-gradient(135deg, var(--green), #86efac);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-value.yellow {
+      background: linear-gradient(135deg, var(--yellow), #fde68a);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+    /* ══════════════════════════════════════
+       FORM
+    ══════════════════════════════════════ */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media(max-width:600px) { .form-grid { grid-template-columns:1fr; } }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1/-1; }
+
+    label { font-size: 12px; color: var(--muted); font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; }
+
+    input, select, textarea {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(99,102,241,0.5);
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+      background: rgba(255,255,255,0.06);
+    }
+    input::placeholder, textarea::placeholder { color: rgba(100,116,139,0.6); }
+    select option { background: var(--bg3); }
+    textarea { resize: vertical; min-height: 90px; }
+
+    .char-counter {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: right;
+      margin-top: 4px;
+      transition: color 0.2s;
+    }
+    .char-counter.warn { color: var(--yellow); }
+    .char-counter.over { color: var(--red); }
+
+    /* ── BUTTON ── */
+    .btn {
+      padding: 10px 22px;
+      border-radius: 9px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      transition: all 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(255,255,255,0);
+      transition: background 0.15s;
+    }
+    .btn:active::after { background: rgba(255,255,255,0.08); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.25);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(99,102,241,0.35);
+    }
+    .btn-primary:active { transform: translateY(0); }
+    .btn-ghost {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .btn-ghost:hover { border-color: rgba(99,102,241,0.3); color: var(--text); background: var(--card-hover); }
+    .btn-ghost.active { border-color: rgba(99,102,241,0.4); color: var(--primary); background: rgba(99,102,241,0.08); }
+    .btn-danger {
+      background: rgba(239,68,68,0.08);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.15);
+    }
+    .btn-danger:hover { background: rgba(239,68,68,0.15); transform: scale(1.05); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 7px; }
+
+    .form-actions {
+      margin-top: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .sync-status { font-size: 12px; color: var(--muted); transition: color 0.2s; }
+    .sync-status.ok { color: var(--green); }
+    .sync-status.error { color: var(--red); }
+
+    /* ══════════════════════════════════════
+       TABLE
+    ══════════════════════════════════════ */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th {
+      text-align: left;
+      padding: 10px 14px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+      font-weight: 600;
+    }
+    td {
+      padding: 13px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+      transition: background 0.15s;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr {
+      transition: background 0.15s;
+      opacity: 0;
+      animation: rowIn 0.3s ease forwards;
+    }
+    @keyframes rowIn {
+      from { opacity: 0; transform: translateX(-8px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    tbody tr:hover td { background: rgba(99,102,241,0.04); }
+
+    /* ══════════════════════════════════════
+       BADGES
+    ══════════════════════════════════════ */
+    .badge-status {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.2px;
+    }
+    .badge-new       { background: rgba(99,102,241,0.12); color: var(--primary); }
+    .badge-replied   { background: rgba(245,158,11,0.12); color: var(--yellow); }
+    .badge-interested { background: rgba(34,197,94,0.12); color: var(--green); }
+    .badge-not       { background: rgba(239,68,68,0.10); color: var(--red); }
+    .badge-draft     { background: rgba(100,116,139,0.15); color: var(--muted); }
+    .badge-scheduled {
+      background: rgba(245,158,11,0.12); color: var(--yellow);
+      animation: pulseBadge 3s ease-in-out infinite;
+    }
+    .badge-published { background: rgba(34,197,94,0.12); color: var(--green); }
+    @keyframes pulseBadge {
+      0%,100% { transform: scale(1); opacity: 1; }
+      50%      { transform: scale(1.04); opacity: 0.85; }
+    }
+
+    /* ══════════════════════════════════════
+       PROGRESS BAR
+    ══════════════════════════════════════ */
+    .progress-wrap { margin-bottom: 20px; }
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    .progress-label span:last-child { color: var(--muted); font-size: 12px; }
+    .progress-bar {
+      height: 5px;
+      background: rgba(255,255,255,0.06);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      width: 0%;
+      transition: width 0.8s cubic-bezier(0.4,0,0.2,1);
+    }
+    .progress-fill.green { background: linear-gradient(90deg, var(--green), #86efac); }
+
+    /* ══════════════════════════════════════
+       EMPTY STATE
+    ══════════════════════════════════════ */
+    .empty-state {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--muted);
+    }
+    .empty-state .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.6; }
+    .empty-state p { font-size: 14px; }
+
+    /* ══════════════════════════════════════
+       CONFIG BANNER
+    ══════════════════════════════════════ */
+    .config-banner {
+      background: rgba(245,158,11,0.07);
+      border: 1px solid rgba(245,158,11,0.18);
+      border-radius: 10px;
+      padding: 12px 18px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: var(--yellow);
+      display: none;
+      align-items: center;
+      gap: 10px;
+    }
+    .config-banner.show { display: flex; }
+    .config-banner a { color: var(--yellow); text-underline-offset: 3px; }
+
+    /* ══════════════════════════════════════
+       TOAST
+    ══════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0;
+      font-size: 14px;
+      z-index: 9999;
+      transform: translateY(80px) scale(0.95);
+      opacity: 0;
+      transition: transform 0.35s cubic-bezier(0.34,1.56,0.64,1), opacity 0.25s ease;
+      min-width: 240px;
+      overflow: hidden;
+    }
+    .toast.show { transform: translateY(0) scale(1); opacity: 1; }
+    .toast-body {
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .toast-progress {
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width linear;
+    }
+    .toast.success { border-color: rgba(34,197,94,0.25); }
+    .toast.success .toast-progress { background: var(--green); }
+
+    /* ══════════════════════════════════════
+       QUICK LINKS
+    ══════════════════════════════════════ */
+    .quick-links { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+    @media(max-width:600px) { .quick-links { grid-template-columns: 1fr; } }
+    .quick-link {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-decoration: none;
+      color: var(--text);
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .quick-link::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(99,102,241,0.05), transparent);
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    .quick-link:hover { border-color: rgba(99,102,241,0.25); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(99,102,241,0.12); }
+    .quick-link:hover::before { opacity: 1; }
+    .quick-link .ql-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .ql-icon.indigo { background: rgba(99,102,241,0.12); }
+    .ql-icon.green  { background: rgba(34,197,94,0.10); }
+    .ql-icon.blue   { background: rgba(59,130,246,0.10); }
+    .quick-link .ql-label { font-size: 13px; font-weight: 600; }
+    .quick-link .ql-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ══════════════════════════════════════
+       VIEW TOGGLE
+    ══════════════════════════════════════ */
+    .view-toggle {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+
+    /* ══════════════════════════════════════
+       LINKEDIN — WEEK CALENDAR
+    ══════════════════════════════════════ */
+    .week-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .week-nav h3 { font-size: 15px; font-weight: 700; }
+    .week-nav-btns { display: flex; gap: 8px; }
+
+    .week-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+    .day-cell {
+      min-height: 110px;
+      background: rgba(255,255,255,0.02);
+      border: 1px dashed rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 10px 8px;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .day-cell:hover {
+      border-color: rgba(99,102,241,0.25);
+      background: rgba(99,102,241,0.04);
+    }
+    .day-cell.today {
+      border-color: rgba(99,102,241,0.35);
+      background: rgba(99,102,241,0.06);
+    }
+    .day-cell.today .day-name { color: var(--primary); }
+    .day-cell.empty-hover::after {
+      content: '+';
+      position: absolute;
+      bottom: 8px; right: 10px;
+      font-size: 18px;
+      color: rgba(99,102,241,0.3);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .day-cell:hover.empty-hover::after { opacity: 1; }
+    .day-name {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .day-num {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+    }
+    .cal-post {
+      font-size: 10px;
+      padding: 4px 7px;
+      border-radius: 5px;
+      margin-bottom: 4px;
+      cursor: default;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .cal-post:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .cal-post.draft     { background: rgba(100,116,139,0.15); color: var(--muted); }
+    .cal-post.scheduled { background: rgba(245,158,11,0.15); color: var(--yellow); }
+    .cal-post.published { background: rgba(34,197,94,0.12); color: var(--green); }
+
+    /* ══════════════════════════════════════
+       CAPTION EXPAND
+    ══════════════════════════════════════ */
+    .caption-cell {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .caption-cell:hover { color: var(--text); }
+    .caption-cell.expanded {
+      white-space: normal;
+      max-width: none;
+    }
+
+    /* ══════════════════════════════════════
+       ANIMATIONS
+    ══════════════════════════════════════ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.4s ease forwards; }
+
+    /* stagger helpers */
+    .stagger-1 { animation-delay: 0.04s; }
+    .stagger-2 { animation-delay: 0.08s; }
+    .stagger-3 { animation-delay: 0.12s; }
+    .stagger-4 { animation-delay: 0.16s; }
+    .stagger-5 { animation-delay: 0.20s; }
+
+    /* ══════════════════════════════════════
+       ANIMATED BACKGROUND MESH
+    ══════════════════════════════════════ */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 10%, rgba(99,102,241,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 80% 80%, rgba(139,92,246,0.06) 0%, transparent 55%),
+        radial-gradient(ellipse 40% 30% at 60% 30%, rgba(59,130,246,0.04) 0%, transparent 50%);
+      animation: meshDrift 18s ease-in-out infinite alternate;
+    }
+    @keyframes meshDrift {
+      0%   { transform: scale(1) translate(0, 0); }
+      33%  { transform: scale(1.04) translate(12px, -8px); }
+      66%  { transform: scale(0.97) translate(-8px, 14px); }
+      100% { transform: scale(1.02) translate(6px, -4px); }
+    }
+    .container { position: relative; z-index: 1; }
+    nav { z-index: 100; }
+
+    /* ══════════════════════════════════════
+       CURSOR SPOTLIGHT
+    ══════════════════════════════════════ */
+    #spotlight {
+      position: fixed;
+      width: 480px;
+      height: 480px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      background: radial-gradient(circle, rgba(99,102,241,0.055) 0%, transparent 70%);
+      transform: translate(-50%, -50%);
+      transition: opacity 0.4s ease;
+      opacity: 0;
+    }
+
+    /* ══════════════════════════════════════
+       CARD SHIMMER SWEEP ON HOVER
+    ══════════════════════════════════════ */
+    .card::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 60%;
+      height: 100%;
+      background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.03) 50%, transparent 60%);
+      transition: left 0.55s ease;
+      pointer-events: none;
+    }
+    .card:hover::after { left: 140%; }
+
+    /* ══════════════════════════════════════
+       NAV TAB — UNDERLINE INDICATOR
+    ══════════════════════════════════════ */
+    .nav-tab {
+      padding-bottom: 8px !important;
+    }
+    .nav-tab::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 2px;
+      transform: translateX(-50%);
+      transition: width 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    .nav-tab.active::after { width: 70%; }
+    .nav-tab:hover::after  { width: 40%; }
+
+    /* ══════════════════════════════════════
+       SECTION HEADER — GRADIENT SHIFT
+    ══════════════════════════════════════ */
+    .section-header h2 {
+      background: linear-gradient(90deg, #fff 0%, #a5b4fc 40%, #fff 80%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: gradShift 5s linear infinite;
+    }
+    @keyframes gradShift {
+      0%   { background-position: 0% center; }
+      100% { background-position: 200% center; }
+    }
+
+    /* ══════════════════════════════════════
+       TABLE ROW — LEFT ACCENT BAR
+    ══════════════════════════════════════ */
+    tbody tr td:first-child {
+      position: relative;
+    }
+    tbody tr td:first-child::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 20%; bottom: 20%;
+      width: 2px;
+      border-radius: 2px;
+      background: linear-gradient(180deg, var(--primary), var(--accent));
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    tbody tr:hover td:first-child::before { opacity: 1; }
+
+    /* ══════════════════════════════════════
+       BUTTON RIPPLE
+    ══════════════════════════════════════ */
+    .ripple {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+      transform: scale(0);
+      animation: rippleAnim 0.5s linear;
+      pointer-events: none;
+    }
+    @keyframes rippleAnim {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    /* ══════════════════════════════════════
+       STAT CARD — NUMBER SHINE
+    ══════════════════════════════════════ */
+    .stat-card:hover .stat-value {
+      filter: brightness(1.15);
+    }
+
+    /* ══════════════════════════════════════
+       FORM — FLOATING LABEL GLOW LINE
+    ══════════════════════════════════════ */
+    .form-group {
+      position: relative;
+    }
+    .form-group::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 1px;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width 0.35s ease;
+      border-radius: 1px;
+    }
+    .form-group:focus-within::after { width: 100%; }
+
+    /* ══════════════════════════════════════
+       QUICK LINK — ICON BOUNCE ON HOVER
+    ══════════════════════════════════════ */
+    .quick-link:hover .ql-icon {
+      animation: iconBounce 0.4s ease;
+    }
+    @keyframes iconBounce {
+      0%   { transform: translateY(0); }
+      30%  { transform: translateY(-5px); }
+      60%  { transform: translateY(-2px); }
+      100% { transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════
+       BADGE — HOVER SCALE
+    ══════════════════════════════════════ */
+    .badge-status {
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .badge-status:hover {
+      transform: scale(1.08);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    /* ══════════════════════════════════════
+       PROGRESS FILL — SHIMMER
+    ══════════════════════════════════════ */
+    .progress-fill {
+      position: relative;
+      overflow: hidden;
+    }
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%;
+      width: 50%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      animation: progressShimmer 2.5s ease-in-out infinite;
+    }
+    @keyframes progressShimmer {
+      0%   { left: -60%; }
+      100% { left: 160%; }
+    }
+
+    /* ══════════════════════════════════════
+       EMPTY STATE — FLOAT ANIMATION
+    ══════════════════════════════════════ */
+    .empty-state .icon {
+      display: inline-block;
+      animation: floatIcon 3s ease-in-out infinite;
+    }
+    @keyframes floatIcon {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(-6px); }
+    }
+
+    /* ══════════════════════════════════════
+       CONFIG BANNER — SLIDE IN
+    ══════════════════════════════════════ */
+    .config-banner.show {
+      animation: bannerIn 0.4s cubic-bezier(0.4,0,0.2,1) forwards;
+    }
+    @keyframes bannerIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ══════════════════════════════════════
+       MOBILE RESPONSIVE
+    ══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      nav {
+        padding: 0 14px;
+        gap: 6px;
+        flex-wrap: nowrap;
+      }
+      .nav-brand {
+        font-size: 12px;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      .nav-right { display: none; }
+      .nav-tabs {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        max-width: calc(100vw - 150px);
+      }
+      .nav-tabs::-webkit-scrollbar { display: none; }
+      .nav-tab {
+        white-space: nowrap;
+        flex-shrink: 0;
+        font-size: 12px;
+        padding: 6px 10px;
+      }
+
+      .container { padding: 16px 14px 48px; }
+      .section-header { margin-bottom: 20px; }
+      .section-header h2 { font-size: 18px; }
+
+      /* override inline 5-col */
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      .stat-card { padding: 14px; }
+      .stat-value { font-size: 26px !important; letter-spacing: -1px !important; }
+
+      .card { padding: 16px; }
+      .card-title { font-size: 14px; }
+
+      .week-grid-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .week-grid { min-width: 560px; }
+
+      .toast {
+        left: 14px;
+        right: 14px;
+        bottom: 14px;
+        min-width: unset;
+        width: auto;
+      }
+
+      .quick-links { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+      .stat-value { font-size: 22px !important; letter-spacing: -0.5px !important; }
+      .quick-links { grid-template-columns: 1fr; }
+    }
+
+    /* ── WHATSAPP LANG TOGGLE ── */
+    .wa-lang-active {
+      border-color: rgba(37,211,102,0.45) !important;
+      color: #25d366 !important;
+      background: rgba(37,211,102,0.08) !important;
+    }
+
+    /* ── MODAL ── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0,0,0,0.72);
+      backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 620px;
+      width: 90%;
+      max-height: 82vh;
+      overflow-y: auto;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .modal-header h3 { font-size: 16px; font-weight: 600; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <div class="live-dot"></div>
+    Neural Grade — Marketing
+  </div>
+  <div class="nav-tabs" id="navTabs">
+<button class="nav-tab active" onclick="switchTab('overview',this)">Overview</button>
+    <button class="nav-tab" onclick="switchTab('beta',this)">Beta Testers</button>
+    <button class="nav-tab" onclick="switchTab('leads',this)">Leads</button>
+    <button class="nav-tab" onclick="switchTab('content',this)">Content</button>
+    <button class="nav-tab" onclick="switchTab('insights',this)">Insights</button>
+    <button class="nav-tab" onclick="switchTab('links',this)">Quick Links</button>
+    <button class="nav-tab" onclick="switchTab('whatsapp',this)">WhatsApp</button>
+    <button class="nav-tab" onclick="switchTab('email',this)">Email</button>
+  </div>
+  <div class="nav-right" id="lastUpdated">—</div>
+</nav>
+
+<!-- CURSOR SPOTLIGHT -->
+<div id="spotlight"></div>
+
+<!-- CONFIG BANNER -->
+<div class="config-banner" id="configBanner">
+  ⚠️ Google Sheets sync not configured — data saves locally only.
+  <a href="#" onclick="goLinks()">Setup →</a>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-body" id="toastBody"></div>
+  <div class="toast-progress" id="toastProgress" style="width:100%"></div>
+</div>
+
+<div class="container">
+
+  <!-- ══════════════════════════════════════
+       OVERVIEW
+  ══════════════════════════════════════ -->
+  <div class="section active" id="section-overview">
+    <div class="section-header fade-up">
+      <h2>Overview</h2>
+      <p>Neural Grade Beta Launch — April 9, 2026</p>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(5,1fr);">
+      <div class="stat-card stagger-1 fade-up">
+        <div class="stat-bar indigo"></div>
+        <div class="stat-label">Beta Testers</div>
+        <div class="stat-value indigo" data-count-id="statBeta">0</div>
+        <div class="stat-sub">Registered</div>
+      </div>
+      <div class="stat-card stagger-2 fade-up">
+        <div class="stat-bar white"></div>
+        <div class="stat-label">Total Leads</div>
+        <div class="stat-value" data-count-id="statLeads">0</div>
+        <div class="stat-sub">Tracked</div>
+      </div>
+      <div class="stat-card stagger-3 fade-up">
+        <div class="stat-bar green"></div>
+        <div class="stat-label">Interested</div>
+        <div class="stat-value green" data-count-id="statInterested">0</div>
+        <div class="stat-sub">Warm leads</div>
+      </div>
+      <div class="stat-card stagger-4 fade-up">
+        <div class="stat-bar yellow"></div>
+        <div class="stat-label">Days to Launch</div>
+        <div class="stat-value yellow" id="statDays">—</div>
+        <div class="stat-sub">April 9, 2026</div>
+      </div>
+      <div class="stat-card stagger-5 fade-up">
+        <div class="stat-bar blue"></div>
+        <div class="stat-label">Conversion</div>
+        <div class="stat-value blue" id="statConversion">0%</div>
+        <div class="stat-sub">Interested / Total</div>
+      </div>
+    </div>
+
+    <div class="card fade-up">
+      <div class="card-title">Launch Progress</div>
+      <div class="progress-wrap">
+        <div class="progress-label">
+          <span>Beta Tester Goal</span>
+          <span id="betaProgressLabel">0 / 15</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="betaProgressBar"></div></div>
+      </div>
+      <div class="progress-wrap" style="margin-bottom:0">
+        <div class="progress-label">
+          <span>Leads Goal</span>
+          <span id="leadProgressLabel">0 / 30</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="leadProgressBar"></div></div>
+      </div>
+    </div>
+
+    <div class="card fade-up">
+      <div class="card-title">Recent Beta Testers <span class="badge" id="recentBadge">0</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Institution</th><th>City</th><th>Source</th><th>Date</th></tr></thead>
+          <tbody id="recentBetaTable">
+            <tr><td colspan="5"><div class="empty-state"><div class="icon">📋</div><p>No beta testers yet</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; margin-top:4px;">
+      <button class="btn btn-ghost" onclick="generateReport()">📊 Weekly Report</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       BETA TESTERS
+  ══════════════════════════════════════ -->
+  <div class="section" id="section-beta">
+    <div class="section-header">
+      <h2>Beta Testers</h2>
+      <p>Register and track beta program participants</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Add Beta Tester</div>
+      <form id="betaForm" onsubmit="addBetaTester(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full Name *</label>
+            <input type="text" id="b_name" placeholder="e.g. Ayesha Khan" required />
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" id="b_email" placeholder="teacher@school.edu.pk" required />
+          </div>
+          <div class="form-group">
+            <label>Institution Name</label>
+            <input type="text" id="b_institution" placeholder="e.g. Beaconhouse School" />
+          </div>
+          <div class="form-group">
+            <label>Institution Type</label>
+            <select id="b_type">
+              <option value="">— Select —</option>
+              <option>School</option><option>College</option>
+              <option>University</option><option>Coaching Center</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" id="b_city" placeholder="e.g. Lahore" />
+          </div>
+          <div class="form-group">
+            <label>Source</label>
+            <select id="b_source">
+              <option value="">— Select —</option>
+              <option>LinkedIn</option><option>WhatsApp</option>
+              <option>Referral</option><option>Facebook</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Notes (optional)</label>
+            <textarea id="b_notes" placeholder="Any additional info..."></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">+ Add Beta Tester</button>
+          <span class="sync-status" id="betaSyncStatus"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-title">All Beta Testers <span class="badge" id="betaBadge">0</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Email</th><th>Institution</th><th>City</th><th>Source</th><th>Date</th><th></th></tr></thead>
+          <tbody id="betaTable">
+            <tr><td colspan="8"><div class="empty-state"><div class="icon">👩‍🏫</div><p>No beta testers yet</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       LEADS
+  ══════════════════════════════════════ -->
+  <div class="section" id="section-leads">
+    <div class="section-header">
+      <h2>Leads Tracker</h2>
+      <p>Track LinkedIn, WhatsApp, and other inbound leads</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Add Lead</div>
+      <form id="leadForm" onsubmit="addLead(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Name *</label>
+            <input type="text" id="l_name" placeholder="e.g. Muhammad Toqeer" required />
+          </div>
+          <div class="form-group">
+            <label>Platform</label>
+            <select id="l_platform">
+              <option>LinkedIn</option><option>WhatsApp</option>
+              <option>Email</option><option>Facebook</option><option>Instagram</option><option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select id="l_type">
+              <option>Comment</option><option>DM</option>
+              <option>Connection Request</option><option>Email</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="l_status">
+              <option value="New">New</option>
+              <option value="Replied">Replied</option>
+              <option value="Interested">Interested</option>
+              <option value="Not Interested">Not Interested</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Message / Note</label>
+            <textarea id="l_message" placeholder="Paste their message or write a note..."></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">+ Add Lead</button>
+          <span class="sync-status" id="leadSyncStatus"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-title">All Leads <span class="badge" id="leadBadge">0</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Platform</th><th>Type</th><th>Status</th><th>Message</th><th>Date</th><th></th></tr></thead>
+          <tbody id="leadTable">
+            <tr><td colspan="8"><div class="empty-state"><div class="icon">💬</div><p>No leads yet</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       LINKEDIN CONTENT CALENDAR
+  ══════════════════════════════════════ -->
+  <div class="section" id="section-content">
+    <div class="section-header">
+      <h2>Social Media Content</h2>
+      <p>Plan, schedule, and track your LinkedIn and Facebook posts</p>
+    </div>
+
+    <!-- LinkedIn Stats -->
+    <div class="stats-grid">
+      <div class="stat-card fade-up">
+        <div class="stat-bar indigo"></div>
+        <div class="stat-label">Total Posts</div>
+        <div class="stat-value indigo" data-count-id="statLiTotal">0</div>
+        <div class="stat-sub">All time</div>
+      </div>
+      <div class="stat-card fade-up stagger-1">
+        <div class="stat-bar green"></div>
+        <div class="stat-label">Published</div>
+        <div class="stat-value green" data-count-id="statLiPublished">0</div>
+        <div class="stat-sub">This week</div>
+      </div>
+      <div class="stat-card fade-up stagger-2">
+        <div class="stat-bar yellow"></div>
+        <div class="stat-label">Scheduled</div>
+        <div class="stat-value yellow" data-count-id="statLiScheduled">0</div>
+        <div class="stat-sub">Upcoming</div>
+      </div>
+      <div class="stat-card fade-up stagger-3">
+        <div class="stat-bar white"></div>
+        <div class="stat-label">Drafts</div>
+        <div class="stat-value" data-count-id="statLiDraft">0</div>
+        <div class="stat-sub">In progress</div>
+      </div>
+    </div>
+
+    <!-- Add Post Form -->
+    <div class="card">
+      <div class="card-title">Add Post</div>
+      <form id="liForm" onsubmit="addLiPost(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Post Type</label>
+            <select id="li_type">
+              <option>Regular Post</option>
+              <option>Carousel</option>
+              <option>Poll</option>
+              <option>Article</option>
+              <option>Video</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Schedule / Post Date</label>
+            <input type="date" id="li_date" />
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="li_status">
+              <option value="Draft">Draft</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Published">Published</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <input type="text" id="li_notes" placeholder="e.g. Add screenshot, tag partner" />
+          </div>
+          <div class="form-group full">
+            <label>Caption *</label>
+            <textarea id="li_caption" placeholder="Write your LinkedIn post caption..." maxlength="3000" oninput="updateCharCount(this)" required></textarea>
+            <div class="char-counter" id="charCounter">0 / 3000</div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">+ Add Post</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- View Toggle -->
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+      <div class="view-toggle">
+        <button class="btn btn-ghost active btn-sm" id="btnList" onclick="setView('list')">List View</button>
+        <button class="btn btn-ghost btn-sm" id="btnCal" onclick="setView('cal')">Week View</button>
+      </div>
+      <div style="font-size:12px; color:var(--muted);" id="liPostCount">0 posts</div>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="liListView">
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Type</th><th>Caption</th>
+                <th>Scheduled</th><th>Status</th><th>Notes</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="liTable">
+              <tr><td colspan="7"><div class="empty-state"><div class="icon">✍️</div><p>No posts yet — plan your first one above</p></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEEK CALENDAR VIEW -->
+    <div id="liCalView" style="display:none;">
+      <div class="card">
+        <div class="week-nav">
+          <h3 id="weekLabel">—</h3>
+          <div class="week-nav-btns">
+            <button class="btn btn-ghost btn-sm" onclick="changeWeek(-1)">← Prev</button>
+            <button class="btn btn-ghost btn-sm" onclick="changeWeek(0)">Today</button>
+            <button class="btn btn-ghost btn-sm" onclick="changeWeek(1)">Next →</button>
+          </div>
+        </div>
+        <div class="week-grid-scroll"><div class="week-grid" id="weekGrid"></div></div>
+      </div>
+    </div>
+
+    <!-- ── FACEBOOK DRAFTS ── -->
+    <div style="margin-top:32px;">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
+        <div style="width:4px; height:20px; background:#1877f2; border-radius:2px;"></div>
+        <h3 style="font-size:15px; font-weight:600;">Facebook Post Drafts</h3>
+        <span style="font-size:12px; color:var(--muted); margin-left:4px;">11 posts — Week 2 Competitive Angle</span>
+      </div>
+      <p style="font-size:12px; color:var(--muted); margin-bottom:16px; padding-left:14px;">Schedule: Mon/Wed/Fri · 7 PM · April 6 – April 29</p>
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px;" id="fbPostGrid"></div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════════════
+       AUDIENCE INSIGHTS
+  ══════════════════════════════════════ -->
+  <div class="section" id="section-insights">
+    <div class="section-header">
+      <h2>Audience Insights</h2>
+      <p>Community feedback, signals, and marketing implications</p>
+    </div>
+
+    <!-- Add Insight Form -->
+    <div class="card">
+      <div class="card-title">Log New Insight</div>
+      <form id="insightForm" onsubmit="addInsight(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Source</label>
+            <select id="ins_source">
+              <option>LinkedIn Comment</option>
+              <option>LinkedIn DM</option>
+              <option>WhatsApp</option>
+              <option>Beta Tester</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Person</label>
+            <input type="text" id="ins_person" placeholder="e.g. Muhammad Toqeer Khan" />
+          </div>
+          <div class="form-group full">
+            <label>Insight *</label>
+            <input type="text" id="ins_insight" placeholder="What did they say or suggest?" required />
+          </div>
+          <div class="form-group full">
+            <label>Marketing Implication</label>
+            <input type="text" id="ins_implication" placeholder="How does this shape our messaging?" />
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">+ Add Insight</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Insights Table -->
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Source</th><th>Person</th><th>Insight</th><th>Implication</th><th>Date</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="insightsTable">
+            <tr><td colspan="7"><div class="empty-state"><div class="icon">💡</div><p>No insights yet</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       QUICK LINKS
+  ══════════════════════════════════════ -->
+  <div class="section" id="section-links">
+    <div class="section-header">
+      <h2>Quick Links</h2>
+      <p>Important resources and Google Sheets setup</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Live Links</div>
+      <div class="quick-links">
+        <a href="https://grading-app-kappa.vercel.app/" target="_blank" class="quick-link">
+          <div class="ql-icon indigo">🚀</div>
+          <div><div class="ql-label">Neural Grade App</div><div class="ql-sub">Live on Vercel</div></div>
+        </a>
+        <a href="https://melodic-fox-90477f.netlify.app/" target="_blank" class="quick-link">
+          <div class="ql-icon green">📊</div>
+          <div><div class="ql-label">Case Study</div><div class="ql-sub">Live on Netlify</div></div>
+        </a>
+        <a href="https://www.linkedin.com/" target="_blank" class="quick-link">
+          <div class="ql-icon blue">💼</div>
+          <div><div class="ql-label">LinkedIn</div><div class="ql-sub">Post & monitor</div></div>
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Google Sheets Sync</div>
+      <div style="font-size:14px; color:var(--muted); line-height:1.8; margin-bottom:20px;">
+        Sync all data to Google Sheets for permanent backup and shared access:
+        <ol style="margin-top:12px; margin-left:20px; display:flex; flex-direction:column; gap:6px;">
+          <li>Create a Google Sheet (any name)</li>
+          <li>Click <strong style="color:var(--text)">Extensions → Apps Script</strong></li>
+          <li>Delete existing code, paste from <strong style="color:var(--text)">sheets-script.js</strong></li>
+          <li><strong style="color:var(--text)">Deploy → New Deployment → Web App → Anyone</strong></li>
+          <li>Copy the URL and paste below</li>
+        </ol>
+      </div>
+      <div class="form-group" style="max-width:580px; margin-bottom:16px;">
+        <label>Apps Script URL</label>
+        <input type="url" id="appsScriptUrl" placeholder="https://script.google.com/macros/s/..." />
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveConfig()">Save & Test Connection</button>
+        <button class="btn btn-ghost" onclick="syncAllToSheets()" style="margin-left:10px;">↑ Sync All Existing Data</button>
+        <button class="btn btn-danger" onclick="clearLocalData()" style="margin-left:10px;">🗑️ Clear Local Cache</button>
+        <span class="sync-status" id="configStatus"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       WHATSAPP TEMPLATES
+  ══════════════════════════════════════ -->
+  <div class="section" id="section-whatsapp">
+    <div class="section-header">
+      <h2>WhatsApp Outreach</h2>
+      <p>Track messages, templates, and responses</p>
+    </div>
+
+    <!-- OUTREACH TRACKER -->
+    <div class="card">
+      <div class="card-title">Log WhatsApp Message</div>
+      <form id="waForm" onsubmit="addWhatsAppLog(event)">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Teacher Name *</label>
+            <input type="text" id="wa_name" placeholder="e.g. Ayesha Khan" required />
+          </div>
+          <div class="form-group">
+            <label>Phone Number *</label>
+            <input type="tel" id="wa_phone" placeholder="e.g. 0300-1234567" required />
+          </div>
+          <div class="form-group">
+            <label>Template Used *</label>
+            <select id="wa_template" required>
+              <option value="">— Select —</option>
+              <option value="Warm">Warm — Personally Jaanti Hain</option>
+              <option value="Semi-Warm">Semi-Warm — Pehle Bataya Hua</option>
+              <option value="Reminder">Reminder — Link Mila Tha</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="wa_status">
+              <option value="Sent">Sent</option>
+              <option value="Delivered">Delivered</option>
+              <option value="Read">Read</option>
+              <option value="Replied">Replied</option>
+              <option value="Interested">Interested</option>
+              <option value="Not Interested">Not Interested</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>App Tried?</label>
+            <select id="wa_app_tried">
+              <option value="Unknown">Unknown</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Review Received?</label>
+            <select id="wa_review">
+              <option value="No">No</option>
+              <option value="Yes">Yes</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Notes (optional)</label>
+            <textarea id="wa_notes" placeholder="Response ya koi note..."></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">+ Log Message</button>
+          <span class="sync-status" id="waSyncStatus"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- OUTREACH TABLE -->
+    <div class="card">
+      <div class="card-title">Outreach Log <span class="badge" id="waLogBadge">0</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Template</th>
+              <th>Status</th>
+              <th>App Tried</th>
+              <th>Review</th>
+              <th>Date</th>
+              <th>Follow-Up</th>
+            </tr>
+          </thead>
+          <tbody id="waLogTable">
+            <tr><td colspan="8"><div class="empty-state"><div class="icon">💬</div><p>No messages logged yet</p></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TEMPLATES -->
+    <div class="section-header" style="margin-top:40px;">
+      <h3 style="font-size:18px;">Message Templates</h3>
+      <p style="font-size:13px;">Copy karein aur [Name] replace karein</p>
+    </div>
+    <div class="card" style="background:rgba(37,211,102,0.04);border-color:rgba(37,211,102,0.2);margin-bottom:20px;">
+      <div style="font-size:13px;color:var(--muted);line-height:1.9;">
+        📌 <strong style="color:var(--text);">Placeholders:</strong> [Name] — send karne se pehle replace karein.<br>
+        📌 <strong style="color:var(--text);">Best time:</strong> 10 AM – 8 PM.<br>
+        📌 Follow-up: 2 din baad, agar reply na aaye.
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:16px;" id="waTemplatesGrid"></div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       EMAIL TEMPLATES
+  ══════════════════════════════════════ -->
+  <div class="section" id="section-email">
+    <div class="section-header">
+      <h2>Email Templates</h2>
+      <p>School principal aur teacher outreach — subject aur body alag copy karein</p>
+    </div>
+    <div class="card" style="background:rgba(99,102,241,0.04);border-color:rgba(99,102,241,0.2);margin-bottom:20px;">
+      <div style="font-size:13px;color:var(--muted);line-height:1.9;">
+        📌 <strong style="color:var(--text);">Placeholders:</strong> [Principal Name], [School Name], [Your Name], [Phone], [Email], [Link] — replace before sending.<br>
+        📌 <strong style="color:var(--text);">Best time:</strong> Tuesday–Thursday, 9–11 AM (highest open rates).<br>
+        📌 Follow-up: 3 din baad, agar reply na aaye.
+      </div>
+    </div>
+    <div id="emailTemplatesGrid"></div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- WEEKLY REPORT MODAL -->
+<div id="reportModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3>📊 Weekly Report</h3>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">✕ Close</button>
+    </div>
+    <textarea id="reportText" readonly style="width:100%;min-height:300px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;color:var(--text);font-family:monospace;font-size:13px;line-height:1.7;resize:vertical;outline:none;"></textarea>
+    <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:14px;">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal()">Close</button>
+      <button class="btn btn-primary" onclick="copyReport()">Copy Report</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  CONFIG
+// ══════════════════════════════════════════
+const CONFIG = {
+  LAUNCH_DATE: '2026-04-09',
+  BETA_GOAL: 15,
+  LEAD_GOAL: 30,
+};
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+const defaultLiPosts = [
+  {
+    id: 1,
+    type: 'Regular Post',
+    caption: '1/\n\nTeachers spend 2-3 days grading 200 papers.\n\nThat\'s 2-3 days away from:\n❌ Family time\n❌ Lesson planning\n❌ Student mentoring\n\nWhat if AI could help?\n\nNeural Grade is coming soon.\nPakistan ka pehla AI grading assistant — built FOR Pakistani teachers.\n\nAI suggests grades, aap review aur approve karte hain. 3 din ka kaam, ab minutes mein.\n\nUrdu + English papers, dono supported.\n\nBeta launch April mein. Early access chahiye?\nComment "Interested" ya DM karein.',
+    date: '2026-03-27',
+    status: 'Published',
+    notes: 'Coming Soon announcement'
+  },
+  {
+    id: 2,
+    type: 'Regular Post',
+    caption: '2/\n\nKuch din pehle humne "coming soon" post ki thi Neural Grade ke liye.\n\nBohot saare messages aaye — "kya hai yeh?", "kaise kaam karta hai?", "aap ne akele banaya?"\n\nToh detail mein share kar rahe hain.\n\nHum do co-founders hain — Ruba aur Sadaf. Sab kuch hum dono milke kar rahe hain.\n\nToh humne shuru kiya ek proper system se:\n→ Competitors research ki\n→ Pakistani teachers ke liye positioning banai\n→ 12-week launch plan likha — 52 tasks, har cheez measured\n→ 20+ templates banaye\n→ Ek strict rule banaya: koi bhi false claim nahi — "AI suggests, teacher approves"\n\nBeta launch hai — FREE trial chal rahi hai abhi.',
+    date: '2026-03-30',
+    status: 'Published',
+    notes: 'Case study share + signup form'
+  },
+  {
+    id: 3,
+    type: 'Regular Post',
+    caption: '3/\n\nPakistani teacher\'s day.\n\n7 AM — school.\n6 periods, 35-40 students each.\nEvening — home. Papers on the table.\n\n200 papers. Red pen. Calculator. Exhaustion.\n\n2 nights. Sometimes 3.\n\nAnd at the end of it — students get their paper back with just a number.\nNo explanation. No "you lost marks here because of this."\n\nThe teacher is too exhausted to write individual feedback for 200 students.\nThe student doesn\'t know what went wrong.\nThe mistake repeats next exam.\n\nWe saw this problem firsthand.\nThat\'s why we built Neural Grade — Pakistan\'s first AI grading assistant.\n\nTeacher uploads papers.\nAI suggests grades and generates detailed feedback — which mistake, which marks deducted, why.\nTeacher reviews, approves, shares with students.\n\nFeedback is stored. Teacher can track which student is struggling where.\n\nAI suggests. Teacher approves. Student learns. Always.',
+    date: '2026-04-02',
+    status: 'Scheduled',
+    notes: 'Teacher problem deep dive + feedback feature'
+  }
+];
+
+let state = {
+  betaTesters: JSON.parse(localStorage.getItem('ng_beta') || '[]'),
+  leads:       JSON.parse(localStorage.getItem('ng_leads') || '[]'),
+  liPosts:     (()=>{ const s=JSON.parse(localStorage.getItem('ng_linkedin')||'[]'); return s.length>0?s:defaultLiPosts; })(),
+  insights:    JSON.parse(localStorage.getItem('ng_insights') || 'null'),
+  waLog:       JSON.parse(localStorage.getItem('ng_walog') || '[]'),
+  appsScriptUrl: localStorage.getItem('ng_script_url') || '',
+};
+
+let currentWeekOffset = 0;
+let currentView = 'list';
+
+// ══════════════════════════════════════════
+//  NAV — SLIDING PILL
+// ══════════════════════════════════════════
+
+function switchTab(name, btn) {
+  const current = document.querySelector('.section.active');
+  if (current) {
+    current.classList.remove('active');
+  }
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const next = document.getElementById('section-' + name);
+  next.classList.add('active', 'enter');
+  setTimeout(() => next.classList.remove('enter'), 400);
+  if (btn) {
+    btn.classList.add('active');
+  }
+  // Trigger animations for this section
+  if (name === 'overview' || name === 'content') {
+    setTimeout(() => animateCounters(), 100);
+    setTimeout(() => animateProgressBars(), 150);
+  }
+  if (name === 'content') {
+    renderCalendar();
+  }
+}
+
+// ══════════════════════════════════════════
+//  COUNT-UP ANIMATION
+// ══════════════════════════════════════════
+function countUp(el, target, duration = 1200) {
+  if (isNaN(target) || target === 0) { el.textContent = target || '—'; return; }
+  const start = performance.now();
+  function step(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(ease * target);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+function animateCounters() {
+  const map = {
+    statBeta:        state.betaTesters.length,
+    statLeads:       state.leads.length,
+    statInterested:  state.leads.filter(l => l.status === 'Interested').length,
+    statLiTotal:     state.liPosts.length,
+    statLiPublished: state.liPosts.filter(p => p.status === 'Published').length,
+    statLiScheduled: state.liPosts.filter(p => p.status === 'Scheduled').length,
+    statLiDraft:     state.liPosts.filter(p => p.status === 'Draft').length,
+  };
+  Object.entries(map).forEach(([id, val]) => {
+    const el = document.querySelector(`[data-count-id="${id}"]`);
+    if (el) countUp(el, val);
+  });
+}
+
+// ══════════════════════════════════════════
+//  STATS & PROGRESS
+// ══════════════════════════════════════════
+function animateProgressBars() {
+  const beta  = state.betaTesters.length;
+  const leads = state.leads.length;
+  const betaPct  = Math.min((beta  / CONFIG.BETA_GOAL) * 100, 100);
+  const leadPct  = Math.min((leads / CONFIG.LEAD_GOAL) * 100, 100);
+  setTimeout(() => {
+    const bBar = document.getElementById('betaProgressBar');
+    const lBar = document.getElementById('leadProgressBar');
+    if (bBar) bBar.style.width = betaPct + '%';
+    if (lBar) lBar.style.width = leadPct + '%';
+  }, 100);
+  const bLabel = document.getElementById('betaProgressLabel');
+  const lLabel = document.getElementById('leadProgressLabel');
+  if (bLabel) bLabel.textContent = `${beta} / ${CONFIG.BETA_GOAL}`;
+  if (lLabel) lLabel.textContent = `${leads} / ${CONFIG.LEAD_GOAL}`;
+}
+
+function updateStats() {
+  // Days to launch
+  const launch = new Date(CONFIG.LAUNCH_DATE);
+  const today  = new Date(); today.setHours(0,0,0,0);
+  const diff   = Math.ceil((launch - today) / 86400000);
+  const daysEl = document.getElementById('statDays');
+  if (daysEl) daysEl.textContent = diff > 0 ? diff : (diff === 0 ? '0' : '✓');
+
+  // Badges
+  const b = document.getElementById('betaBadge'),
+        r = document.getElementById('recentBadge'),
+        l = document.getElementById('leadBadge');
+  if (b) b.textContent = state.betaTesters.length;
+  if (r) r.textContent = state.betaTesters.length;
+  if (l) l.textContent = state.leads.length;
+
+  // Li post count
+  const lpc = document.getElementById('liPostCount');
+  if (lpc) lpc.textContent = state.liPosts.length + ' posts';
+
+  // Conversion rate
+  const totalLeads = state.leads.length;
+  const intLeads = state.leads.filter(l => l.status === 'Interested').length;
+  const convEl = document.getElementById('statConversion');
+  if (convEl) convEl.textContent = totalLeads > 0 ? Math.round((intLeads / totalLeads) * 100) + '%' : '0%';
+
+  document.getElementById('lastUpdated').textContent = 'Updated ' + new Date().toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit' });
+  animateCounters();
+  animateProgressBars();
+}
+
+// ══════════════════════════════════════════
+//  BETA TESTERS
+// ══════════════════════════════════════════
+function addBetaTester(e) {
+  e.preventDefault();
+  const t = {
+    id: Date.now(),
+    name: v('b_name'), email: v('b_email'),
+    institution: v('b_institution'), type: v('b_type'),
+    city: v('b_city'), source: v('b_source'), notes: v('b_notes'),
+    date: fmtDate(new Date()),
+  };
+  state.betaTesters.unshift(t);
+  saveLocal();
+  renderBetaTable();
+  renderRecentTable();
+  updateStats();
+  document.getElementById('betaForm').reset();
+  toast('✅ Beta tester added!', 'success');
+  syncSheets('beta', t);
+}
+
+function deleteBetaTester(id) {
+  if (!confirm('Delete this beta tester?')) return;
+  state.betaTesters = state.betaTesters.filter(b => b.id !== id);
+  saveLocal(); renderBetaTable(); renderRecentTable(); updateStats();
+  toast('Deleted.', '');
+}
+
+function renderBetaTable() {
+  const tbody = document.getElementById('betaTable');
+  if (!state.betaTesters.length) {
+    tbody.innerHTML = emptyState('👩‍🏫', 'No beta testers yet — add the first one above', 8);
+    return;
+  }
+  tbody.innerHTML = state.betaTesters.map((b, i) => `
+    <tr style="animation-delay:${i*40}ms">
+      <td style="color:var(--muted);font-size:12px">${state.betaTesters.length - i}</td>
+      <td><strong>${esc(b.name)}</strong></td>
+      <td style="color:var(--muted);font-size:13px">${esc(b.email)}</td>
+      <td>${esc(b.institution||'—')}</td>
+      <td>${esc(b.city||'—')}</td>
+      <td>${b.source?`<span class="badge-status badge-new">${esc(b.source)}</span>`:'—'}</td>
+      <td style="color:var(--muted);font-size:12px">${b.date}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteBetaTester(${b.id})">✕</button></td>
+    </tr>`).join('');
+}
+
+function renderRecentTable() {
+  const tbody = document.getElementById('recentBetaTable');
+  const recent = state.betaTesters.slice(0, 5);
+  if (!recent.length) {
+    tbody.innerHTML = emptyState('📋', 'No beta testers yet', 5);
+    return;
+  }
+  tbody.innerHTML = recent.map((b, i) => `
+    <tr style="animation-delay:${i*40}ms">
+      <td><strong>${esc(b.name)}</strong></td>
+      <td>${esc(b.institution||'—')}</td>
+      <td>${esc(b.city||'—')}</td>
+      <td>${b.source?`<span class="badge-status badge-new">${esc(b.source)}</span>`:'—'}</td>
+      <td style="color:var(--muted);font-size:12px">${b.date}</td>
+    </tr>`).join('');
+}
+
+// ══════════════════════════════════════════
+//  LEADS
+// ══════════════════════════════════════════
+function addLead(e) {
+  e.preventDefault();
+  const l = {
+    id: Date.now(),
+    name: v('l_name'), platform: v('l_platform'),
+    type: v('l_type'), status: v('l_status'), message: v('l_message'),
+    date: fmtDate(new Date()),
+    dateIso: new Date().toISOString().split('T')[0],
+  };
+  state.leads.unshift(l);
+  saveLocal(); renderLeadTable(); updateStats();
+  document.getElementById('leadForm').reset();
+  toast('✅ Lead added!', 'success');
+  syncSheets('lead', l);
+}
+
+function updateLeadStatus(id, status) {
+  const l = state.leads.find(l => l.id === id);
+  if (l) { l.status = status; saveLocal(); renderLeadTable(); updateStats(); }
+}
+
+function deleteLead(id) {
+  if (!confirm('Delete this lead?')) return;
+  state.leads = state.leads.filter(l => l.id !== id);
+  saveLocal(); renderLeadTable(); updateStats(); toast('Deleted.', '');
+}
+
+function daysSinceLead(lead) {
+  const d = lead.dateIso ? new Date(lead.dateIso) : new Date(lead.date);
+  if (isNaN(d)) return 0;
+  return Math.floor((Date.now() - d.getTime()) / 86400000);
+}
+
+const statusBadge = { New:'badge-new', Replied:'badge-replied', Interested:'badge-interested', 'Not Interested':'badge-not' };
+const statusBadgeLi = { Draft:'badge-draft', Scheduled:'badge-scheduled', Published:'badge-published' };
+
+function renderLeadTable() {
+  const tbody = document.getElementById('leadTable');
+  if (!state.leads.length) {
+    tbody.innerHTML = emptyState('💬', 'No leads yet — add your first one above', 8);
+    return;
+  }
+  tbody.innerHTML = state.leads.map((l, i) => {
+    const needsFollowUp = ['New','Replied'].includes(l.status) && daysSinceLead(l) >= 3;
+    return `
+    <tr style="animation-delay:${i*40}ms">
+      <td style="color:var(--muted);font-size:12px">${state.leads.length-i}</td>
+      <td><strong>${esc(l.name)}</strong></td>
+      <td>${esc(l.platform)}</td>
+      <td style="color:var(--muted);font-size:13px">${esc(l.type)}</td>
+      <td style="white-space:nowrap;">
+        <select class="badge-status ${statusBadge[l.status]||'badge-new'}"
+          style="border:none;cursor:pointer;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:inherit;color:inherit;"
+          onchange="updateLeadStatus(${l.id},this.value)">
+          <option ${l.status==='New'?'selected':''}>New</option>
+          <option ${l.status==='Replied'?'selected':''}>Replied</option>
+          <option ${l.status==='Interested'?'selected':''}>Interested</option>
+          <option ${l.status==='Not Interested'?'selected':''}>Not Interested</option>
+        </select>
+        ${needsFollowUp ? '<span style="display:inline-block;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px;">Follow Up!</span>' : ''}
+      </td>
+      <td class="caption-cell" onclick="this.classList.toggle('expanded')" title="Click to expand">${esc(l.message||'—')}</td>
+      <td style="color:var(--muted);font-size:12px">${l.date}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteLead(${l.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+//  LINKEDIN POSTS
+// ══════════════════════════════════════════
+function addLiPost(e) {
+  e.preventDefault();
+  const p = {
+    id: Date.now(),
+    type: v('li_type'), caption: v('li_caption'),
+    scheduleDate: v('li_date'), status: v('li_status'), notes: v('li_notes'),
+    createdDate: fmtDate(new Date()),
+  };
+  state.liPosts.unshift(p);
+  saveLocal(); renderLiTable(); renderCalendar(); updateStats();
+  document.getElementById('liForm').reset();
+  document.getElementById('charCounter').textContent = '0 / 3000';
+  document.getElementById('charCounter').className = 'char-counter';
+  toast('✅ Post added!', 'success');
+  syncSheets('linkedin', p);
+}
+
+function updateLiStatus(id, status) {
+  const p = state.liPosts.find(p => p.id === id);
+  if (p) { p.status = status; saveLocal(); renderLiTable(); renderCalendar(); updateStats(); }
+}
+
+function deleteLiPost(id) {
+  if (!confirm('Delete this post?')) return;
+  state.liPosts = state.liPosts.filter(p => p.id !== id);
+  saveLocal(); renderLiTable(); renderCalendar(); updateStats(); toast('Deleted.', '');
+}
+
+function renderLiTable() {
+  const tbody = document.getElementById('liTable');
+  if (!state.liPosts.length) {
+    tbody.innerHTML = emptyState('✍️', 'No posts yet — plan your first one above', 7);
+    return;
+  }
+  tbody.innerHTML = state.liPosts.map((p, i) => `
+    <tr style="animation-delay:${i*40}ms">
+      <td style="color:var(--muted);font-size:12px">${state.liPosts.length-i}</td>
+      <td><span class="badge-status badge-new" style="font-size:11px">${esc(p.type)}</span></td>
+      <td class="caption-cell" onclick="this.classList.toggle('expanded')" title="Click to expand">${esc(p.caption)}</td>
+      <td style="color:var(--muted);font-size:12px">${p.scheduleDate ? fmtDatetime(p.scheduleDate) : '—'}</td>
+      <td>
+        <select class="badge-status ${statusBadgeLi[p.status]||'badge-draft'}"
+          style="border:none;cursor:pointer;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:inherit;color:inherit;"
+          onchange="updateLiStatus(${p.id},this.value)">
+          <option ${p.status==='Draft'?'selected':''}>Draft</option>
+          <option ${p.status==='Scheduled'?'selected':''}>Scheduled</option>
+          <option ${p.status==='Published'?'selected':''}>Published</option>
+        </select>
+      </td>
+      <td style="color:var(--muted);font-size:12px">${esc(p.notes||'—')}</td>
+      <td style="display:flex;gap:6px;">
+        <button class="btn btn-ghost btn-sm" onclick="copyLiPost(${p.id},this)" title="Copy caption">Copy</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteLiPost(${p.id})">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+function copyLiPost(id, btn) {
+  const p = state.liPosts.find(p => p.id === id);
+  if (!p) return;
+  navigator.clipboard.writeText(p.caption).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+    toast('✅ Caption copied!', 'success');
+  });
+}
+
+// ── WEEK CALENDAR ──
+function changeWeek(dir) {
+  if (dir === 0) currentWeekOffset = 0;
+  else currentWeekOffset += dir;
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const grid  = document.getElementById('weekGrid');
+  const label = document.getElementById('weekLabel');
+  if (!grid) return;
+
+  const today  = new Date(); today.setHours(0,0,0,0);
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - today.getDay() + 1 + (currentWeekOffset * 7));
+
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  const endDay = new Date(monday); endDay.setDate(monday.getDate() + 6);
+  label.textContent = `${monday.getDate()} ${months[monday.getMonth()]} — ${endDay.getDate()} ${months[endDay.getMonth()]} ${endDay.getFullYear()}`;
+
+  grid.innerHTML = '';
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(monday); day.setDate(monday.getDate() + i);
+    const isToday = day.getTime() === today.getTime();
+    const dayStr  = day.toISOString().split('T')[0];
+
+    // posts for this day
+    const posts = state.liPosts.filter(p => {
+      if (!p.scheduleDate) return false;
+      return p.scheduleDate.startsWith(dayStr);
+    });
+
+    const hasPosts = posts.length > 0;
+    const cell = document.createElement('div');
+    cell.className = `day-cell${isToday?' today':''}${!hasPosts?' empty-hover':''}`;
+    cell.innerHTML = `
+      <div class="day-name">${days[i]}</div>
+      <div class="day-num">${day.getDate()}</div>
+      ${posts.map(p => `
+        <div class="cal-post ${p.status.toLowerCase()}" title="${esc(p.caption)}">
+          ${esc(p.caption.substring(0,30))}${p.caption.length>30?'…':''}
+        </div>`).join('')}
+    `;
+    grid.appendChild(cell);
+  }
+}
+
+// ══════════════════════════════════════════
+//  FACEBOOK POSTS
+// ══════════════════════════════════════════
+const FB_POSTS = [
+  {
+    num: 1, label: 'Time Cost', date: 'Mon, Apr 6 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `Teachers, ek sawaal:\n\n200 papers check karne mein aapke kitne ghante jaate hain?\n\n✏️ Manual grading = 2-3 din\n✏️ Har paper = 10-15 minute\n✏️ Weekends gone. Family time gone.\n\nNeural Grade se?\n⚡ AI papers scan karta hai\n⚡ Aap sirf review aur approve karte ho\n⚡ Teacher ka time — teaching pe wapas\n\nBeta launch — pehle 50 teachers FREE.\nComment "TIME" ya DM karein.\n\n#TeachersOfPakistan #AIGrading #Education #PakistanEdTech`
+  },
+  {
+    num: 2, label: 'Control', date: 'Wed, Apr 8 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `"AI grading pe trust nahi" — bilkul sahi baat hai.\n\nIsliye Neural Grade mein:\n✅ AI sirf suggest karta hai\n✅ Teacher har mark khud approve karta hai\n✅ Koi bhi mark edit karo — final control aapka hai\n\nAI ki speed + Teacher ki judgement = Perfect combination\n\nBeta launch chal raha hai — FREE trial.\nDM karein ya comment "DEMO".\n\n#TeacherControl #AIGrading #Pakistan #EdTech`
+  },
+  {
+    num: 3, label: 'Manual vs Neural Grade', date: 'Fri, Apr 10 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `Manual paper checking se kya milta hai?\n\n❌ 2-3 din ka time\n❌ Thakaan\n❌ Calculation errors\n❌ Har student ke liye alag feedback likhna\n\nNeural Grade se kya milta hai?\n\n✅ AI se grading — manual se kaafi tez\n✅ Detailed per-student feedback — automatic\n✅ Professional PDF marksheet\n✅ Teacher final approval — galti ki gunjaaish nahi\n\nBeta launch — try karo FREE.\nComment "LINK" for signup.\n\n#GradingSmarter #PakistanTeachers #AIGrading`
+  },
+  {
+    num: 4, label: 'Feedback Feature', date: 'Mon, Apr 13 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `Har student ko individual feedback dena...\n\n😓 30 students = 30 alag feedback\n😓 Likhtay likhtay haath dard karta hai\n😓 Phir bhi sab generic nikalta hai\n\nNeural Grade se:\n✅ AI har student ki specific galti note karta hai\n✅ "Question 3 mein yeh mistake ki — isliye 2 marks kate"\n✅ Feedback stored rahti hai — student ko baad mein bhi share kar sako\n✅ Aap track kar sako — kaun kahan struggle kar raha hai\n\nBeta launch — FREE trial.\nDM "FEEDBACK" for demo.\n\n#StudentFeedback #TeachersOfPakistan #EdTech`
+  },
+  {
+    num: 5, label: 'Weekend', date: 'Wed, Apr 15 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `Last Sunday kahan the aap?\n\n📚 Papers check kar rahe the... ghar pe.\n\nYeh "teacher life" nahi — yeh burnout hai.\n\nNeural Grade banaya hi isliye:\n✅ Papers AI check kare\n✅ Aap sirf approve karo\n✅ Marksheet PDF ready\n\nWeekend aapka — family ke saath.\n\nBeta launch — pehle 50 teachers FREE trial.\nComment "WEEKEND" ya DM karein.\n\n#TeacherBurnout #WorkLifeBalance #AIGrading #Pakistan`
+  },
+  {
+    num: 6, label: 'Urdu Support', date: 'Fri, Apr 17 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `Urdu medium papers check karna — alag hi challenge hai.\n\nDusre tools? Sirf English support.\n\nNeural Grade:\n✅ Urdu papers — supported\n✅ English papers — supported\n✅ Mix bhi chalega\n\nPakistan ke teachers ke liye, Pakistan mein bana.\n\nBeta launch — FREE trial.\nDM karein ya comment "URDU".\n\n#UrduMedium #PakistanTeachers #AIGrading #EdTech`
+  },
+  {
+    num: 7, label: 'Marksheet', date: 'Mon, Apr 20 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `Parents ko results dene ka scene:\n\n📄 Handwritten sheet → parents confuse\n📄 Excel file → unprofessional lagta hai\n📄 Neural Grade PDF marksheet → clean, detailed, professional\n\nHar student ka:\n✅ Individual marksheet\n✅ Marks breakdown\n✅ Feedback summary\n✅ 1 click download\n\nBeta launch — try FREE.\nComment "MARKSHEET" for signup link.\n\n#Marksheet #ParentTeacherMeeting #Pakistan #EdTech`
+  },
+  {
+    num: 8, label: 'Still Doing This?', date: 'Wed, Apr 22 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `Agar aap abhi bhi yeh kar rahe ho:\n\n📌 Papers haath se check karna\n📌 Calculator pe marks add karna\n📌 Excel mein manually enter karna\n📌 Phir marksheet print karna\n\nToh 2-3 din lag rahe hain sirf is kaam mein.\n\nNeural Grade yeh sab karta hai — aap sirf review aur approve karo.\n\nAI suggests. Teacher approves. Simple.\n\nBeta launch — FREE trial chal raha hai.\nDM karein.\n\n#TeacherLife #SmartGrading #AIGrading #Pakistan`
+  },
+  {
+    num: 9, label: 'Trust', date: 'Fri, Apr 24 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `Humse puchha gaya: "AI galat marks dega toh?"\n\nBilkul valid sawaal.\n\nIsliye Neural Grade mein AI ka koi mark final nahi hota jab tak teacher approve na kare.\n\nStep 1: AI grading karta hai\nStep 2: Teacher har mark dekhta hai\nStep 3: Jo sahi lagta hai approve karo, jo galat lagta hai edit karo\nStep 4: Marksheet ready\n\nControl kabhi nahi jaata aapke haath se.\n\nBeta launch — FREE trial.\nComment "CONTROL" ya DM karein.\n\n#AITrust #TeacherControl #NeuralGrade #EdTech`
+  },
+  {
+    num: 10, label: 'Comparison', date: 'Mon, Apr 27 · 7 PM', color: '#1877f2', status: 'Draft',
+    text: `Pehle vs Ab:\n\nPEHLE:\n❌ 200 papers = 2-3 din\n❌ Har mark haath se likhna\n❌ Feedback generic\n❌ Marksheet manually banana\n\nAB (Neural Grade se):\n✅ AI grading — manual se kaafi tez\n✅ Detailed per-student feedback — automatic\n✅ Teacher final approval — aapka control\n✅ Professional PDF marksheet — 1 click\n\nBeta launch chal raha hai — pehle 50 teachers FREE.\nComment "START" ya DM karein.\n\n#BeforeAfter #NeuralGrade #AIGrading #PakistanEdTech`
+  },
+  {
+    num: 11, label: 'Teacher Replace Nahi', date: 'Wed, Apr 29 · 7 PM', color: '#8b5cf6', status: 'Draft',
+    text: `Ek galat fehmi door karte hain:\n\nNeural Grade teachers ko replace karne ke liye nahi bana.\n\nTeachers replace nahi ho sakte — aur hona bhi nahi chahiye.\n\nJo cheez replace ho rahi hai woh hai:\n❌ 2-3 din ki thakaan\n❌ Weekends ka jaana\n❌ Woh waqt jo papers mein gum ho jaata tha\n\nAapka time — aapko wapas.\nTaa ke aap woh karo jo sirf aap kar sakte ho:\n✅ Students ko samjhao\n✅ Motivation do\n✅ Real teaching karo\n\nAI kaam kare. Teacher teach kare.\n\nBeta launch — FREE trial.\nComment "TIME" ya DM karein.\n\n#TeachersFirst #AIGrading #Pakistan #EdTech`
+  }
+];
+
+// ══════════════════════════════════════════
+//  WHATSAPP TEMPLATES DATA
+// ══════════════════════════════════════════
+const WA_TEMPLATES = [
+  {
+    label: 'Warm Outreach — Inhe Jaanti Hain (Personal)',
+    text: `Assalam-o-Alaikum [Name]!
+
+Aapko pata hai main AI pe kaam kar rahi thi — humne ek tool banaya hai jo teachers ki paper checking kaafi hadd tak fast kar deta hai. AI grading suggest karta hai, aap final approve karti hain — control poora aapka.
+
+Abhi beta launch hai aur main chahti hoon aap pehle try karein aur feedback dein.
+
+📝 Pehle yeh short form fill karein:
+https://docs.google.com/forms/d/e/1FAIpQLSeVZIf_MJKQfiuN-Mi9v-c8UbPlt-LSR7Y8c1ldl0LIzvdlDg/viewform?usp=header
+
+🚀 Phir seedha app try karein:
+https://grading-app-kappa.vercel.app/
+
+Bilkul free hai — koi commitment nahi. Try karke batayein kaisa laga!
+
+JazakAllah!
+Sadaf`,
+    en: `Assalam-o-Alaikum [Name]!
+
+As you know, I've been working on AI — we've built a tool that significantly speeds up paper checking for teachers. The AI suggests grades, you give the final approval — full control stays with you.
+
+We're in beta right now and I'd love for you to be one of the first to try it and share your feedback.
+
+📝 First, fill out this short form:
+https://docs.google.com/forms/d/e/1FAIpQLSeVZIf_MJKQfiuN-Mi9v-c8UbPlt-LSR7Y8c1ldl0LIzvdlDg/viewform?usp=header
+
+🚀 Then try the app directly:
+https://grading-app-kappa.vercel.app/
+
+Completely free — no commitment. Try it and let me know what you think!
+
+JazakAllah!
+Sadaf`
+  },
+  {
+    label: 'Semi-Warm — Pehle Bataya Hua Hai',
+    text: `Assalam-o-Alaikum [Name],
+
+Pehle Neural Grade ke baare mein baat hui thi — humara AI grading tool jo teachers ka paper checking time kaafi kam kar deta hai.
+
+Beta launch ho gaya hai! Aap pehle 50 teachers mein se hain jinhe FREE trial mil raha hai.
+
+📝 Beta tester form yahan fill karein:
+https://docs.google.com/forms/d/e/1FAIpQLSeVZIf_MJKQfiuN-Mi9v-c8UbPlt-LSR7Y8c1ldl0LIzvdlDg/viewform?usp=header
+
+🚀 App seedha try karein:
+https://grading-app-kappa.vercel.app/
+
+Sirf 2 minute lagenge — try karke batayein kaisa laga!
+
+JazakAllah!
+Sadaf`,
+    en: `Assalam-o-Alaikum [Name],
+
+We spoke earlier about Neural Grade — our AI grading tool that significantly reduces the time teachers spend checking papers.
+
+Beta is now live! You're among the first 50 teachers to receive a FREE trial.
+
+📝 Fill out the beta tester form here:
+https://docs.google.com/forms/d/e/1FAIpQLSeVZIf_MJKQfiuN-Mi9v-c8UbPlt-LSR7Y8c1ldl0LIzvdlDg/viewform?usp=header
+
+🚀 Try the app directly:
+https://grading-app-kappa.vercel.app/
+
+Only takes 2 minutes — try it and let me know what you think!
+
+JazakAllah!
+Sadaf`
+  },
+  {
+    label: 'Reminder — Link Mila Tha, Form Fill Nahi Kiya',
+    text: `Assalam-o-Alaikum [Name],
+
+Pichli dafa Neural Grade ka link bheja tha — bas yeh confirm karna tha ke aapne form fill kiya ya nahi?
+
+📝 Form link yeh hai:
+https://docs.google.com/forms/d/e/1FAIpQLSeVZIf_MJKQfiuN-Mi9v-c8UbPlt-LSR7Y8c1ldl0LIzvdlDg/viewform?usp=header
+
+🚀 App seedha try kar sakte hain:
+https://grading-app-kappa.vercel.app/
+
+Sirf 2 minute ka kaam hai — try karke batayein kaisa laga!
+
+Agar koi sawal ho toh poochh sakte hain!
+
+JazakAllah,
+Sadaf`,
+    en: `Assalam-o-Alaikum [Name],
+
+I had shared the Neural Grade link earlier — just wanted to check if you had a chance to fill out the form?
+
+📝 Here's the form link:
+https://docs.google.com/forms/d/e/1FAIpQLSeVZIf_MJKQfiuN-Mi9v-c8UbPlt-LSR7Y8c1ldl0LIzvdlDg/viewform?usp=header
+
+🚀 You can try the app directly:
+https://grading-app-kappa.vercel.app/
+
+Only takes 2 minutes — try it and let me know what you think!
+
+Feel free to ask if you have any questions!
+
+JazakAllah,
+Sadaf`
+  }
+];
+
+// ══════════════════════════════════════════
+//  EMAIL TEMPLATES DATA
+// ══════════════════════════════════════════
+const EMAIL_TEMPLATES = [
+  {
+    label: 'School Outreach (Principal)',
+    subject: 'Reduce Teacher Workload by 80% — Free Trial for [School Name]',
+    body: `Dear [Principal Name],
+
+I'm [Your Name], co-founder of Neural Grade — an AI-powered grading tool built for Pakistani teachers.
+
+The Problem:
+Your teachers spend 2-3 days grading 200 papers. That's time they could spend teaching, planning lessons, or mentoring students.
+
+The Solution:
+Neural Grade grades papers using AI. Teachers review and approve every mark — full control remains with them.
+
+What Makes It Different:
+✅ Built for Pakistan — Urdu/English support
+✅ Any paper format — MCQ, short answer, long answer
+✅ Professional PDF marksheets — individual + class overview
+✅ Affordable — Rs. 1,500/month per teacher (after free trial)
+
+Free Trial Offer:
+We'd like to offer a free trial for your teaching staff. No commitment, no credit card required.
+
+Try it here: [Link]
+
+Best regards,
+[Your Name]
+[Phone]
+[Email]`
+  },
+  {
+    label: 'Follow-Up (After 3 Days No Reply)',
+    subject: 'Re: Free Trial for [School Name]',
+    body: `Dear [Principal Name],
+
+Just following up on my previous email about Neural Grade.
+
+I understand you're busy, so I'll keep this short:
+- AI-powered grading — teachers review & approve everything
+- Full control stays with teacher
+- FREE trial — no commitment
+
+Try it here: [Link]
+
+Best,
+[Your Name]
+[Phone]`
+  },
+  {
+    label: 'After Signup (Thank You)',
+    subject: 'Thank You for Signing Up — Neural Grade',
+    body: `Dear [Name],
+
+Thank you for signing up for Neural Grade!
+
+Here's your login link: [Link]
+
+Next Steps:
+1. Create your account
+2. Start your first session
+3. Upload papers and see it in action
+
+If you have any questions or run into any issues, please don't hesitate to reach out.
+
+Also, if you know other teachers who might benefit, feel free to share — we're offering FREE trial for the first 50 teachers.
+
+Best regards,
+[Your Name]
+[Phone]
+[Email]`
+  }
+];
+
+// ══════════════════════════════════════════
+//  FACEBOOK POST AUTO-STATUS
+// ══════════════════════════════════════════
+function getAutoFbStatus(dateStr) {
+  const match = dateStr.match(/([A-Za-z]+)\s+(\d+)/);
+  if (!match) return { label: 'Upcoming', cls: 'badge-draft' };
+  const monthMap = {Jan:0,Feb:1,Mar:2,Apr:3,May:4,Jun:5,Jul:6,Aug:7,Sep:8,Oct:9,Nov:10,Dec:11};
+  const month = monthMap[match[1]];
+  if (month === undefined) return { label: 'Upcoming', cls: 'badge-draft' };
+  const postDate = new Date(2026, month, parseInt(match[2]));
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (postDate < today)  return { label: 'Published', cls: 'badge-published' };
+  if (postDate.getTime() === today.getTime()) return { label: 'Today',     cls: 'badge-scheduled' };
+  return { label: 'Upcoming', cls: 'badge-draft' };
+}
+
+function renderFbPosts() {
+  const grid = document.getElementById('fbPostGrid');
+  if (!grid) return;
+  grid.innerHTML = FB_POSTS.map(p => {
+    const st = getAutoFbStatus(p.date);
+    return `
+    <div class="card" style="position:relative;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:8px;">
+        <div>
+          <span style="font-size:11px; font-weight:700; color:${p.color}; text-transform:uppercase; letter-spacing:0.5px;">Post ${p.num} — ${p.label}</span>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+            <span style="font-size:11px; color:var(--muted);">📅 ${p.date}</span>
+            <span class="badge-status ${st.cls}" style="font-size:10px; padding:2px 7px;">${st.label}</span>
+          </div>
+        </div>
+        <button onclick="copyFbPost(this)" class="btn btn-ghost btn-sm" style="font-size:11px; padding:5px 12px; flex-shrink:0;">Copy</button>
+      </div>
+      <pre class="fb-post-text" style="white-space:pre-wrap; font-family:inherit; font-size:13px; color:var(--text); line-height:1.6; margin:0; max-height:220px; overflow-y:auto;">${esc(p.text)}</pre>
+    </div>
+  `;
+  }).join('');
+}
+
+
+// ── VIEW TOGGLE ──
+function setView(view) {
+  currentView = view;
+  document.getElementById('liListView').style.display = view === 'list' ? 'block' : 'none';
+  document.getElementById('liCalView').style.display  = view === 'cal'  ? 'block' : 'none';
+  document.getElementById('btnList').classList.toggle('active', view === 'list');
+  document.getElementById('btnCal').classList.toggle('active', view === 'cal');
+  if (view === 'cal') renderCalendar();
+}
+
+// ══════════════════════════════════════════
+//  AUDIENCE INSIGHTS
+// ══════════════════════════════════════════
+const DEFAULT_INSIGHTS = [
+  {
+    id: 1,
+    source: 'LinkedIn Comment',
+    person: 'Muhammad Toqeer Khan',
+    insight: 'Lesson planning har topic aur class ke liye build karna teachers ka sabse zyada time leta hai — yeh bhi ek bada problem hai jo Neural Grade future mein solve kar sakta hai.',
+    implication: 'Grading ke baad lesson planning bhi teacher workload ka core pain point hai. Future messaging mein "complete teacher workflow" angle test karna.',
+    date: '2026-03-27'
+  }
+];
+
+if (state.insights === null) {
+  state.insights = DEFAULT_INSIGHTS;
+  localStorage.setItem('ng_insights', JSON.stringify(state.insights));
+}
+
+function addInsight(e) {
+  e.preventDefault();
+  const insight = {
+    id: Date.now(),
+    source: document.getElementById('ins_source').value,
+    person: document.getElementById('ins_person').value.trim(),
+    insight: document.getElementById('ins_insight').value.trim(),
+    implication: document.getElementById('ins_implication').value.trim(),
+    date: new Date().toISOString().split('T')[0]
+  };
+  state.insights.unshift(insight);
+  localStorage.setItem('ng_insights', JSON.stringify(state.insights));
+  syncSheets('insight', insight);
+  renderInsights();
+  e.target.reset();
+}
+
+function deleteInsight(id) {
+  state.insights = state.insights.filter(i => i.id !== id);
+  localStorage.setItem('ng_insights', JSON.stringify(state.insights));
+  renderInsights();
+}
+
+function renderInsights() {
+  const tbody = document.getElementById('insightsTable');
+  if (!tbody) return;
+  if (!state.insights.length) {
+    tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="icon">💡</div><p>No insights yet</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = state.insights.map((ins, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td><span class="badge indigo">${esc(ins.source)}</span></td>
+      <td style="font-size:13px;">${esc(ins.person || '—')}</td>
+      <td style="max-width:280px; font-size:13px; line-height:1.5;">${esc(ins.insight)}</td>
+      <td style="max-width:240px; font-size:12px; color:var(--muted); line-height:1.5;">${esc(ins.implication || '—')}</td>
+      <td style="font-size:12px; color:var(--muted); white-space:nowrap;">${ins.date}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="deleteInsight(${ins.id})" title="Delete">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+// ══════════════════════════════════════════
+//  WHATSAPP OUTREACH TRACKER
+// ══════════════════════════════════════════
+function addWhatsAppLog(e) {
+  e.preventDefault();
+  const wa = {
+    id: Date.now(),
+    name: v('wa_name'),
+    phone: v('wa_phone'),
+    template: v('wa_template'),
+    status: v('wa_status'),
+    appTried: v('wa_app_tried'),
+    review: v('wa_review'),
+    notes: v('wa_notes'),
+    date: fmtDate(new Date()),
+    dateIso: new Date().toISOString().split('T')[0],
+  };
+
+  // Calculate follow-up date (2 days later)
+  const followUpDate = new Date();
+  followUpDate.setDate(followUpDate.getDate() + 2);
+  wa.followUp = fmtDate(followUpDate);
+
+  if (!state.waLog) state.waLog = [];
+  state.waLog.unshift(wa);
+  localStorage.setItem('ng_walog', JSON.stringify(state.waLog));
+  renderWALog();
+  updateStats();
+  document.getElementById('waForm').reset();
+  toast('✅ WhatsApp message logged!', 'success');
+  syncSheets('whatsapp', wa);
+}
+
+function updateWAStatus(id, field, value) {
+  if (!state.waLog) return;
+  const wa = state.waLog.find(w => w.id === id);
+  if (wa) {
+    wa[field] = value;
+    localStorage.setItem('ng_walog', JSON.stringify(state.waLog));
+    renderWALog();
+    updateStats();
+  }
+}
+
+function deleteWALog(id) {
+  if (!confirm('Delete this WhatsApp log?')) return;
+  state.waLog = state.waLog.filter(w => w.id !== id);
+  localStorage.setItem('ng_walog', JSON.stringify(state.waLog));
+  renderWALog();
+  updateStats();
+  toast('Deleted.', '');
+}
+
+const statusBadgeWA = {
+  Sent: 'badge-new',
+  Delivered: 'badge-new',
+  Read: 'badge-replied',
+  Replied: 'badge-replied',
+  Interested: 'badge-interested',
+  'Not Interested': 'badge-not'
+};
+
+function renderWALog() {
+  const tbody = document.getElementById('waLogTable');
+  const badge = document.getElementById('waLogBadge');
+  if (!state.waLog) state.waLog = [];
+
+  badge.textContent = state.waLog.length;
+
+  if (!state.waLog.length) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="empty-state"><div class="icon">💬</div><p>No messages logged yet</p></div></td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = state.waLog.map((wa, i) => {
+    const needsFollowUp = ['Sent','Delivered','Read'].includes(wa.status) && daysSinceLead(wa) >= 2;
+    return `
+    <tr style="animation-delay:${i*40}ms">
+      <td><strong>${esc(wa.name)}</strong></td>
+      <td style="font-size:12px;color:var(--muted);">${esc(wa.phone)}</td>
+      <td><span class="badge-status badge-new" style="font-size:11px">${esc(wa.template)}</span></td>
+      <td style="white-space:nowrap;">
+        <select class="badge-status ${statusBadgeWA[wa.status]||'badge-new'}"
+          style="border:none;cursor:pointer;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:inherit;color:inherit;"
+          onchange="updateWAStatus(${wa.id},'status',this.value)">
+          <option ${wa.status==='Sent'?'selected':''}>Sent</option>
+          <option ${wa.status==='Delivered'?'selected':''}>Delivered</option>
+          <option ${wa.status==='Read'?'selected':''}>Read</option>
+          <option ${wa.status==='Replied'?'selected':''}>Replied</option>
+          <option ${wa.status==='Interested'?'selected':''}>Interested</option>
+          <option ${wa.status==='Not Interested'?'selected':''}>Not Interested</option>
+        </select>
+        ${needsFollowUp ? '<span style="display:inline-block;background:rgba(245,158,11,0.15);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;margin-left:4px;">Follow Up!</span>' : ''}
+      </td>
+      <td>
+        <select class="badge-status ${wa.appTried==='Yes'?'badge-interested':'badge-new'}"
+          style="border:none;cursor:pointer;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:inherit;color:inherit;"
+          onchange="updateWAStatus(${wa.id},'appTried',this.value)">
+          <option ${wa.appTried==='Unknown'?'selected':''}>Unknown</option>
+          <option ${wa.appTried==='Yes'?'selected':''}>Yes</option>
+          <option ${wa.appTried==='No'?'selected':''}>No</option>
+        </select>
+      </td>
+      <td>
+        <select class="badge-status ${wa.review==='Yes'?'badge-interested':'badge-new'}"
+          style="border:none;cursor:pointer;font-size:11px;font-weight:600;padding:3px 8px;border-radius:20px;background:inherit;color:inherit;"
+          onchange="updateWAStatus(${wa.id},'review',this.value)">
+          <option ${wa.review==='No'?'selected':''}>No</option>
+          <option ${wa.review==='Yes'?'selected':''}>Yes</option>
+        </select>
+      </td>
+      <td style="color:var(--muted);font-size:12px">${wa.date}</td>
+      <td style="color:var(--muted);font-size:12px">${wa.followUp||'—'}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteWALog(${wa.id})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CHAR COUNTER ──
+function copyFbPost(btn) {
+  const text = btn.closest('.card').querySelector('.fb-post-text').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+  });
+}
+
+function updateCharCount(el) {
+  const len = el.value.length;
+  const counter = document.getElementById('charCounter');
+  counter.textContent = `${len} / 3000`;
+  counter.className = 'char-counter' + (len > 2800 ? ' over' : len > 2500 ? ' warn' : '');
+}
+
+// ══════════════════════════════════════════
+//  GOOGLE SHEETS SYNC
+// ══════════════════════════════════════════
+function syncAllToSheets() {
+  if (!state.appsScriptUrl) { toast('Pehle URL save karo', ''); return; }
+  const s = document.getElementById('configStatus');
+  s.textContent = 'Syncing...'; s.className = 'sync-status';
+  const all = [
+    ...state.betaTesters.map(d => ({ type: 'beta', data: d })),
+    ...state.leads.map(d => ({ type: 'lead', data: d })),
+    ...state.insights.map(d => ({ type: 'insight', data: d })),
+  ];
+  if (!all.length) { s.textContent = 'Koi data nahi'; s.className = 'sync-status'; return; }
+  let done = 0;
+  all.forEach(item => {
+    fetch(state.appsScriptUrl, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item),
+    }).finally(() => {
+      done++;
+      if (done === all.length) {
+        s.textContent = `✓ ${all.length} records synced!`;
+        s.className = 'sync-status ok';
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+          s.textContent = '';
+          s.className = 'sync-status';
+        }, 3000);
+      }
+    });
+  });
+}
+
+function syncSheets(type, data) {
+  if (!state.appsScriptUrl) return;
+  fetch(state.appsScriptUrl, {
+    method: 'POST', mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ type, data }),
+  }).catch(() => {});
+}
+
+// ══════════════════════════════════════════
+//  LOAD DATA FROM SHEETS
+// ══════════════════════════════════════════
+function loadFromSheets() {
+  if (!state.appsScriptUrl) return Promise.resolve();
+
+  // Use JSONP approach for cross-origin GET requests
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    const callbackName = 'sheetsCallback_' + Date.now();
+
+    window[callbackName] = function(result) {
+      delete window[callbackName];
+      document.body.removeChild(script);
+
+      if (result.status === 'ok' && result.data) {
+        // Merge without duplicates — use email as unique key for beta testers
+        if (result.data.betaTesters && result.data.betaTesters.length > 0) {
+          const existingEmails = new Set(state.betaTesters.map(b => b.email));
+          const newTesters = result.data.betaTesters.filter(b => !existingEmails.has(b.email));
+
+          if (newTesters.length > 0) {
+            state.betaTesters = [...newTesters, ...state.betaTesters];
+            localStorage.setItem('ng_beta', JSON.stringify(state.betaTesters));
+          }
+        }
+
+        if (result.data.leads && result.data.leads.length > 0) {
+          const existingLeadIds = new Set(state.leads.map(l => l.id));
+          const newLeads = result.data.leads.filter(l => !existingLeadIds.has(l.id));
+
+          if (newLeads.length > 0) {
+            state.leads = [...newLeads, ...state.leads];
+            localStorage.setItem('ng_leads', JSON.stringify(state.leads));
+          }
+        }
+
+        if (result.data.waLog && result.data.waLog.length > 0) {
+          const existingWaIds = new Set(state.waLog.map(w => w.id));
+          const newWaLogs = result.data.waLog.filter(w => !existingWaIds.has(w.id));
+
+          if (newWaLogs.length > 0) {
+            state.waLog = [...newWaLogs, ...state.waLog];
+            localStorage.setItem('ng_walog', JSON.stringify(state.waLog));
+          }
+        }
+        console.log('✓ Data loaded from Sheets:', result.data);
+      }
+      resolve();
+    };
+
+    script.src = state.appsScriptUrl + '?type=all&callback=' + callbackName;
+    script.onerror = () => {
+      delete window[callbackName];
+      document.body.removeChild(script);
+      console.log('Could not load from Sheets');
+      resolve();
+    };
+
+    document.body.appendChild(script);
+  });
+}
+
+function saveConfig() {
+  const url = document.getElementById('appsScriptUrl').value.trim();
+  state.appsScriptUrl = url;
+  localStorage.setItem('ng_script_url', url);
+  const s = document.getElementById('configStatus');
+  if (!url) {
+    s.textContent = 'Cleared — local only.'; s.className = 'sync-status';
+    document.getElementById('configBanner').classList.add('show'); return;
+  }
+  s.textContent = 'Testing...'; s.className = 'sync-status';
+  fetch(url, { method:'POST', mode:'no-cors', body: JSON.stringify({type:'ping'}) })
+    .then(() => {
+      s.textContent = '✓ Connected!'; s.className = 'sync-status ok';
+      document.getElementById('configBanner').classList.remove('show');
+      // Load data from Sheets after successful connection
+      loadFromSheets().then(() => {
+        renderBetaTable();
+        renderRecentTable();
+        renderLeadTable();
+        renderWALog();
+        updateStats();
+      });
+    })
+    .catch(() => { s.textContent = '⚠ Check URL'; s.className = 'sync-status error'; });
+}
+
+function clearLocalData() {
+  if (!confirm('⚠️ Local cache clear hoga aur Sheets se fresh data load hoga. Continue?')) return;
+
+  // Clear all local data except script URL
+  const scriptUrl = state.appsScriptUrl;
+  localStorage.clear();
+  localStorage.setItem('ng_script_url', scriptUrl);
+
+  // Reset state
+  state.betaTesters = [];
+  state.leads = [];
+  state.waLog = [];
+  state.insights = null;
+
+  toast('✓ Cache cleared!', 'success');
+
+  // Reload from Sheets
+  if (scriptUrl) {
+    loadFromSheets().then(() => {
+      renderBetaTable();
+      renderRecentTable();
+      renderLeadTable();
+      renderWALog();
+      renderInsights();
+      updateStats();
+      toast('✓ Data reloaded from Sheets!', 'success');
+    });
+  } else {
+    renderBetaTable();
+    renderRecentTable();
+    renderLeadTable();
+    renderWALog();
+    renderInsights();
+    updateStats();
+  }
+      renderRecentTable();
+      renderLeadTable();
+      renderInsights();
+      updateStats();
+    });
+  } else {
+    location.reload();
+  }
+}
+
+function goLinks() {
+  const btn = document.querySelectorAll('.nav-tab')[4];
+  switchTab('links', btn);
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function saveLocal() {
+  localStorage.setItem('ng_beta',    JSON.stringify(state.betaTesters));
+  localStorage.setItem('ng_leads',   JSON.stringify(state.leads));
+  localStorage.setItem('ng_linkedin',JSON.stringify(state.liPosts));
+}
+function v(id) { return document.getElementById(id).value.trim(); }
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtDate(d) {
+  return d.toLocaleDateString('en-PK', { day:'numeric', month:'short', year:'numeric' });
+}
+function fmtDatetime(s) {
+  if (!s) return '—';
+  const d = new Date(s);
+  return d.toLocaleDateString('en-PK', { day:'numeric', month:'short' }) + ' ' +
+         d.toLocaleTimeString('en-PK', { hour:'2-digit', minute:'2-digit' });
+}
+function emptyState(icon, msg, cols) {
+  return `<tr><td colspan="${cols}"><div class="empty-state"><div class="icon">${icon}</div><p>${msg}</p></div></td></tr>`;
+}
+
+let toastTimer;
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  const body = document.getElementById('toastBody');
+  const bar  = document.getElementById('toastProgress');
+  body.textContent = msg;
+  el.className = `toast show ${type}`;
+  bar.style.transition = 'none';
+  bar.style.width = '100%';
+  setTimeout(() => {
+    bar.style.transition = 'width 3s linear';
+    bar.style.width = '0%';
+  }, 50);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// ══════════════════════════════════════════
+//  LINKEDIN AUTO-STATUS UPDATE
+// ══════════════════════════════════════════
+function autoUpdateLiStatuses() {
+  const today = new Date().toISOString().split('T')[0];
+  let changed = false;
+  state.liPosts.forEach(p => {
+    if (p.status === 'Scheduled' && p.scheduleDate && p.scheduleDate < today) {
+      p.status = 'Published';
+      changed = true;
+    }
+  });
+  if (changed) saveLocal();
+}
+
+// ══════════════════════════════════════════
+//  WHATSAPP & EMAIL TEMPLATE RENDERERS
+// ══════════════════════════════════════════
+function renderWaTemplates() {
+  const grid = document.getElementById('waTemplatesGrid');
+  if (!grid) return;
+  grid.innerHTML = WA_TEMPLATES.map((t, i) => `
+    <div class="card" id="waCard${i}" data-lang="ur">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; gap:8px; flex-wrap:wrap;">
+        <span style="font-size:11px; font-weight:700; color:#25d366; text-transform:uppercase; letter-spacing:0.5px;">Template ${i+1} — ${esc(t.label)}</span>
+        <div style="display:flex; gap:6px; flex-shrink:0;">
+          <button onclick="switchWaLang(${i},'ur',this)" class="btn btn-ghost btn-sm wa-lang-btn wa-lang-active" style="font-size:11px; padding:4px 10px;">Roman Urdu</button>
+          <button onclick="switchWaLang(${i},'en',this)" class="btn btn-ghost btn-sm wa-lang-btn" style="font-size:11px; padding:4px 10px;">English</button>
+          <button onclick="copyWaTemplate(${i},this)" class="btn btn-ghost btn-sm" style="font-size:11px;">Copy</button>
+        </div>
+      </div>
+      <pre id="waPre${i}" style="white-space:pre-wrap; font-family:inherit; font-size:13px; color:var(--text); line-height:1.6; margin:0; max-height:260px; overflow-y:auto;">${esc(t.text)}</pre>
+    </div>
+  `).join('');
+}
+
+function switchWaLang(idx, lang, btn) {
+  const card = document.getElementById('waCard' + idx);
+  card.setAttribute('data-lang', lang);
+  document.getElementById('waPre' + idx).textContent = lang === 'en' ? WA_TEMPLATES[idx].en : WA_TEMPLATES[idx].text;
+  card.querySelectorAll('.wa-lang-btn').forEach(b => b.classList.remove('wa-lang-active'));
+  btn.classList.add('wa-lang-active');
+}
+
+function renderEmailTemplates() {
+  const grid = document.getElementById('emailTemplatesGrid');
+  if (!grid) return;
+  grid.innerHTML = EMAIL_TEMPLATES.map((t, i) => `
+    <div class="card" style="margin-bottom:16px;">
+      <div style="font-size:12px; font-weight:700; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:12px;">Email ${i+1} — ${esc(t.label)}</div>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; padding:10px 14px; background:var(--bg3); border-radius:8px; border:1px solid var(--border);">
+        <div style="flex:1;">
+          <div style="font-size:11px; color:var(--muted); margin-bottom:2px;">Subject</div>
+          <div style="font-size:13px; font-weight:500;">${esc(t.subject)}</div>
+        </div>
+        <button onclick="copyEmailPart(${i},'subject',this)" class="btn btn-ghost btn-sm" style="font-size:11px; flex-shrink:0;">Copy</button>
+      </div>
+      <div style="display:flex; align-items:flex-start; gap:10px;">
+        <pre style="flex:1; white-space:pre-wrap; font-family:inherit; font-size:13px; color:var(--text); line-height:1.6; margin:0; max-height:220px; overflow-y:auto; padding:10px 14px; background:var(--bg3); border-radius:8px; border:1px solid var(--border);">${esc(t.body)}</pre>
+        <button onclick="copyEmailPart(${i},'body',this)" class="btn btn-ghost btn-sm" style="font-size:11px; flex-shrink:0; margin-top:4px;">Copy</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copyWaTemplate(idx, btn) {
+  const card = document.getElementById('waCard' + idx);
+  const lang = card.getAttribute('data-lang');
+  const text = lang === 'en' ? WA_TEMPLATES[idx].en : WA_TEMPLATES[idx].text;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+    toast('✅ Template copied!', 'success');
+  });
+}
+
+function copyEmailPart(idx, part, btn) {
+  const text = part === 'subject' ? EMAIL_TEMPLATES[idx].subject : EMAIL_TEMPLATES[idx].body;
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.color = 'var(--green)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 2000);
+    toast('✅ Copied!', 'success');
+  });
+}
+
+// ══════════════════════════════════════════
+//  WEEKLY REPORT GENERATOR
+// ══════════════════════════════════════════
+function generateReport() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmt = d => `${d.getDate()} ${months[d.getMonth()]}`;
+  const inWeek = d => d >= monday && d <= sunday;
+  const parseDate = x => x.dateIso ? new Date(x.dateIso) : new Date(x.date);
+
+  const newBeta  = state.betaTesters.filter(b => inWeek(parseDate(b)));
+  const newLeads = state.leads.filter(l => inWeek(parseDate(l)));
+  const interested = state.leads.filter(l => l.status === 'Interested');
+  const total = state.leads.length;
+  const conv = total > 0 ? Math.round((interested.length / total) * 100) : 0;
+  const publishedLi = state.liPosts.filter(p => {
+    if (p.status !== 'Published') return false;
+    const d = p.scheduleDate ? new Date(p.scheduleDate) : null;
+    return d && inWeek(d);
+  });
+
+  let r = `Neural Grade — Weekly Report (${fmt(monday)} – ${fmt(sunday)} ${sunday.getFullYear()})\n`;
+  r += `${'─'.repeat(54)}\n\n`;
+  r += `Beta Testers : ${newBeta.length} new this week   (Total: ${state.betaTesters.length})\n`;
+  r += `Leads        : ${newLeads.length} new this week   (Total: ${total} | ${interested.length} Interested)\n`;
+  r += `LinkedIn     : ${publishedLi.length} posts published this week\n`;
+  r += `Conversion   : ${conv}%  (Interested / Total Leads)\n`;
+
+  if (newLeads.length) {
+    r += `\nNew Leads:\n`;
+    newLeads.forEach(l => { r += `  • ${l.name} (${l.platform}) — ${l.status}\n`; });
+  }
+  if (newBeta.length) {
+    r += `\nNew Beta Testers:\n`;
+    newBeta.forEach(b => { r += `  • ${b.name}${b.institution ? ' — ' + b.institution : ''}\n`; });
+  }
+
+  r += `\n${'─'.repeat(54)}\n`;
+  r += `Generated: ${new Date().toLocaleDateString('en-PK', {day:'numeric', month:'short', year:'numeric'})}`;
+
+  document.getElementById('reportText').value = r;
+  document.getElementById('reportModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('reportModal').classList.remove('open');
+}
+
+function copyReport() {
+  navigator.clipboard.writeText(document.getElementById('reportText').value).then(() => {
+    toast('✅ Report copied!', 'success');
+  });
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+function init() {
+  if (state.appsScriptUrl) {
+    document.getElementById('appsScriptUrl').value = state.appsScriptUrl;
+    // Load data from Sheets on startup
+    loadFromSheets().then(() => {
+      renderBetaTable();
+      renderRecentTable();
+      renderLeadTable();
+      renderLiTable();
+      renderInsights();
+      renderWALog();
+      updateStats();
+    });
+  } else {
+    document.getElementById('configBanner').classList.add('show');
+  }
+
+  autoUpdateLiStatuses();
+  renderBetaTable();
+  renderRecentTable();
+  renderLeadTable();
+  renderLiTable();
+  renderInsights();
+  renderWALog();
+  renderFbPosts();
+  renderWaTemplates();
+  renderEmailTemplates();
+  updateStats();
+
+}
+
+init();
+
+// ══════════════════════════════════════════
+//  CURSOR SPOTLIGHT
+// ══════════════════════════════════════════
+const spotlight = document.getElementById('spotlight');
+let spotlightVisible = false;
+document.addEventListener('mousemove', e => {
+  spotlight.style.left = e.clientX + 'px';
+  spotlight.style.top  = e.clientY + 'px';
+  if (!spotlightVisible) {
+    spotlight.style.opacity = '1';
+    spotlightVisible = true;
+  }
+});
+document.addEventListener('mouseleave', () => {
+  spotlight.style.opacity = '0';
+  spotlightVisible = false;
+});
+
+// ══════════════════════════════════════════
+//  BUTTON RIPPLE
+// ══════════════════════════════════════════
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.btn-primary');
+  if (!btn) return;
+  const rect   = btn.getBoundingClientRect();
+  const size   = Math.max(rect.width, rect.height);
+  const x      = e.clientX - rect.left - size / 2;
+  const y      = e.clientY - rect.top  - size / 2;
+  const ripple = document.createElement('span');
+  ripple.className = 'ripple';
+  ripple.style.cssText = `width:${size}px;height:${size}px;left:${x}px;top:${y}px`;
+  btn.appendChild(ripple);
+  setTimeout(() => ripple.remove(), 550);
+});
+</script>
+</body>
+</html>
